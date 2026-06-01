@@ -1,0 +1,10 @@
+.esphome/
+.git-local/
+__pycache__/
+*.py[cod]
+*.bin
+*.elf
+*.map
+*.factory.bin
+*.ota.bin
+secrets.yaml

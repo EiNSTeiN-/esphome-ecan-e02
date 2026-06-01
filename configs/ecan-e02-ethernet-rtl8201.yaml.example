@@ -1,0 +1,14 @@
+packages:
+  bare: !include ecan-e02-bare.yaml
+
+# This is the common ESP32 RMII layout. Confirm MDC, MDIO, REF_CLK,
+# phy_addr, and any power/reset pin before flashing this config.
+ethernet:
+  type: RTL8201
+  mdc_pin: GPIO23
+  mdio_pin: GPIO18
+  phy_addr: 0
+  clk:
+    mode: CLK_EXT_IN
+    pin: GPIO0
+
