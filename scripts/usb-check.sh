@@ -30,6 +30,8 @@ section "Serial modules"
 for module in cdc_acm usbserial ch341 ch343; do
   if modinfo "$module" >/dev/null 2>&1; then
     echo "$module: available"
+  elif [ -d "/sys/module/$module" ]; then
+    echo "$module: loaded external module"
   else
     echo "$module: not available"
   fi
@@ -60,7 +62,7 @@ fi
 
 section "TTY candidates"
 found=false
-for pattern in /dev/serial/by-id/* /dev/ttyUSB* /dev/ttyACM* /dev/ttyCH*; do
+for pattern in /dev/serial/by-id/* /dev/ttyUSB* /dev/ttyACM* /dev/ttyCH343USB* /dev/ttyCH*; do
   for path in $pattern; do
     if [ -e "$path" ]; then
       found=true

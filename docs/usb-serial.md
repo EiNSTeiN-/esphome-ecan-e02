@@ -24,6 +24,16 @@ The host kernel has the in-tree `ch341` driver available:
 
 There is no in-tree `ch343` module on this host, and no blacklist entry was found for `ch341`, `usbserial`, `cdc_acm`, or `ch343`.
 
+The official WCH `ch343ser_linux` driver was also tested locally:
+
+- repository: `https://github.com/WCHSoftGroup/ch343ser_linux`
+- commit tested: `b705737356bb247bd6dd34e65ef56688aa35748c`
+- kernel tested: `6.14.0-1004-oem`
+- result: built successfully and loaded as the out-of-tree `ch343` module
+- expected vendor-driver tty name: `/dev/ttyCH343USB0`
+
+No `/dev/ttyCH343USB*` device appeared after loading the module because the CH343 adapter still was not visible in `lsusb`.
+
 ## Expected cases
 
 ### How to choose the driver
@@ -41,6 +51,14 @@ To capture the exact attach event:
 
 ```sh
 ./scripts/watch-usb.sh 60
+```
+
+To build or load the WCH vendor driver again:
+
+```sh
+./scripts/ch343-driver.sh build
+./scripts/ch343-driver.sh load
+./scripts/ch343-driver.sh status
 ```
 
 ### Device appears as `1a86:7523`, `1a86:7522`, or `1a86:5523`
@@ -105,6 +123,12 @@ sudo make load
 ```
 
 Do not unload `cdc_acm` while using the Espressif native `303a:1001` `/dev/ttyACM0` path, because that is the working driver for that interface.
+
+With the vendor driver loaded, a working adapter should appear as `/dev/ttyCH343USB0` or similar. Use that path explicitly if auto-detection does not pick it:
+
+```sh
+./scripts/flash-bare.sh /dev/ttyCH343USB0
+```
 
 ## Container or sandbox note
 

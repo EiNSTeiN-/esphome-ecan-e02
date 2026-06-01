@@ -41,11 +41,12 @@ Flash over the detected serial interface:
 ./scripts/flash-bare.sh
 ```
 
-If the port auto-detect does not find the adapter, pass it explicitly. Use `/dev/ttyUSB0` for the external WCH CH34x/CH343 UART path, or `/dev/ttyACM0` for an Espressif native USB CDC/JTAG path:
+If the port auto-detect does not find the adapter, pass it explicitly. Use `/dev/ttyUSB0` for the external WCH CH34x/CH343 UART path, `/dev/ttyACM0` for an Espressif native USB CDC/JTAG path, or `/dev/ttyCH343USB0` when using WCH's vendor CH343 driver:
 
 ```sh
 ./scripts/flash-bare.sh /dev/ttyUSB0
 ./scripts/flash-bare.sh /dev/ttyACM0
+./scripts/flash-bare.sh /dev/ttyCH343USB0
 ```
 
 Read serial logs:
@@ -63,6 +64,7 @@ The bare firmware enables only serial logging and the local `ecan_e02` component
 - `configs/ecan-e02-gpio-probe.yaml.example`: passive GPIO input sampler for suspected pins
 - `configs/ecan-e02-can-listen.yaml.example`: ESP32 TWAI/CAN listen-only skeleton
 - `configs/ecan-e02-ethernet-rtl8201.yaml.example`: likely RTL8201 RMII skeleton
+- `scripts/ch343-driver.sh`: fetch/build/load the WCH CH343-family vendor driver
 - `docs/pin-tracing.md`: physical tracing checklist
 - `docs/usb-serial.md`: CH343, `cdc_acm`, `ch341`, and Espressif native USB notes
 
