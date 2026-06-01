@@ -10,7 +10,7 @@ if [ -d /dev/serial/by-id ]; then
   while IFS= read -r path; do
     name="$(basename "$path" | tr '[:upper:]' '[:lower:]')"
     case "$name" in
-      *ch343*|*wch*|*usb-serial*|*usb_serial*|*serial*)
+      *espressif*|*jtag*|*acm*|*qinheng*|*wch*|*ch34*|*ch343*|*ch341*|*usb-serial*|*usb_serial*|*serial*)
         readlink -f "$path"
         exit 0
         ;;
@@ -31,6 +31,5 @@ for path in /dev/ttyUSB* /dev/ttyACM*; do
   fi
 done
 
-echo "No USB serial port found. Pass a port explicitly, for example: ./scripts/flash-bare.sh /dev/ttyUSB0" >&2
+echo "No USB serial port found. Pass a port explicitly, for example: ./scripts/flash-bare.sh /dev/ttyUSB0 or /dev/ttyACM0" >&2
 exit 1
-

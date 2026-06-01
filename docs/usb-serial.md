@@ -6,6 +6,16 @@ The ECAN-E02 board is flashed through an external WCH CH343-family USB-UART adap
 
 On this host, `lsusb` did not show a WCH/QinHeng device (`1a86:*`) when checked. Because the CH343 is external, that means the USB-UART adapter itself was not enumerating in the current environment. A missing driver normally still leaves a USB device visible in `lsusb`; it just does not create `/dev/ttyUSB*` or `/dev/ttyACM*`.
 
+Earlier kernel history did show an Espressif native USB device:
+
+- vendor/product: `303a:1001`
+- product: `USB JTAG/serial debug unit`
+- driver: `cdc_acm`
+- tty: `/dev/ttyACM0`
+- serial: `34:85:18:07:A4:08`
+
+That path uses the ESP32's native USB CDC/JTAG interface rather than the external CH343 USB-UART adapter. If this device is the board currently being flashed, use `/dev/ttyACM0`; if the external CH343 adapter is being used, expect a WCH/QinHeng USB device instead.
+
 The host kernel has the in-tree `ch341` driver available:
 
 - module: `ch341`
@@ -36,6 +46,17 @@ Try:
 ```sh
 sudo modprobe cdc_acm
 ls /dev/ttyACM*
+```
+
+### Device appears as Espressif `303a:1001`
+
+This is the ESP32 native USB JTAG/serial interface. It also uses the kernel `cdc_acm` module and usually creates `/dev/ttyACM0`.
+
+Try:
+
+```sh
+sudo modprobe cdc_acm
+./scripts/flash-bare.sh /dev/ttyACM0
 ```
 
 ### Device appears as another `1a86:*` CH343 ID with no tty

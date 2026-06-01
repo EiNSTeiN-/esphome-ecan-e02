@@ -44,11 +44,18 @@ fi
 
 section "Modprobe blacklists"
 if command -v rg >/dev/null 2>&1; then
-  rg -n '(^|\s)(blacklist|install)\s+(ch341|usbserial|cdc_acm|ch343)\b|1a86|55d[0-9a-f]|7523|5523' \
+  rg -n '(^|\s)(blacklist|install)\s+(ch341|usbserial|cdc_acm|ch343)\b|1a86|303a|55d[0-9a-f]|7523|5523|1001' \
     /etc/modprobe.d /usr/lib/modprobe.d /lib/modprobe.d || true
 else
-  grep -RInE '(^|[[:space:]])(blacklist|install)[[:space:]]+(ch341|usbserial|cdc_acm|ch343)\b|1a86|55d[0-9a-f]|7523|5523' \
+  grep -RInE '(^|[[:space:]])(blacklist|install)[[:space:]]+(ch341|usbserial|cdc_acm|ch343)\b|1a86|303a|55d[0-9a-f]|7523|5523|1001' \
     /etc/modprobe.d /usr/lib/modprobe.d /lib/modprobe.d 2>/dev/null || true
+fi
+
+section "ESPHome detected port"
+if port="$(./scripts/serial-port.sh 2>/dev/null)"; then
+  echo "$port"
+else
+  echo "No ESPHome serial port auto-detected"
 fi
 
 section "TTY candidates"
@@ -65,3 +72,10 @@ if [ "$found" = false ]; then
   echo "No USB serial tty candidates visible in this environment"
 fi
 
+section "Recent USB serial kernel messages"
+if command -v journalctl >/dev/null 2>&1; then
+  journalctl -k --no-pager -n 160 |
+    grep -Ei 'usb|tty(USB|ACM)|ch341|ch343|cdc_acm|303a|1a86|55d[0-9a-f]|7523|5523|1001' || true
+else
+  echo "journalctl not installed"
+fi
