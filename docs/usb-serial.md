@@ -34,6 +34,37 @@ The official WCH `ch343ser_linux` driver was also tested locally:
 
 No `/dev/ttyCH343USB*` device appeared after loading the module because the CH343 adapter still was not visible in `lsusb`.
 
+## Local host configuration findings
+
+A local udev rule was found at `/etc/udev/rules.d/99-external_video.rules`:
+
+```udev
+ACTION=="add", SUBSYSTEM=="usb", RUN+="/usr/local/bin/external_video.sh"
+```
+
+That script ran `timeout 2 nvtop` for every USB add event. Kernel logs showed `nvtop` segfaulting when the Espressif `303a:1001` device enumerated earlier. This rule was disabled by renaming it to:
+
+```sh
+/etc/udev/rules.d/99-external_video.rules.disabled
+```
+
+and reloading udev rules. USB authorization defaults were checked and were normal:
+
+- `/sys/module/usbcore/parameters/authorized_default`: `1`
+- root hub `authorized_default`: `1`
+- root hub `interface_authorized_default`: `1`
+- visible USB devices/interfaces `authorized`: `1`
+
+No `usbguard`, `tlp`, `powertop`, or `laptop-mode` service was installed/running. USB autosuspend was temporarily disabled for visible hubs/devices during testing by setting their `power/control` files to `on`; this did not make the CH343 adapter enumerate.
+
+Driver blacklist checks found no active `blacklist`, `install`, or `softdep` rule for `cdc_acm`, `ch341`, `ch343`, `usbserial`, or `usbcore`. The only matching line was a commented-out `/etc/modprobe.d/blacklist.conf` entry:
+
+```conf
+#blacklist cdc_acm
+```
+
+Conclusion from the host audit: the `nvtop` udev rule was a real bad configuration and should stay disabled, but it does not fully explain the current `lsusb` absence. With the rule disabled, authorization enabled, autosuspend off, and `ch341`/`cdc_acm`/vendor `ch343` loaded, the kernel still logs no attach event for the CH343 adapter. That points to the adapter/cable/port/power path rather than a remaining Linux policy block.
+
 ## Expected cases
 
 ### How to choose the driver
