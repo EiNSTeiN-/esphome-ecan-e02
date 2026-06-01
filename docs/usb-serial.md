@@ -26,6 +26,23 @@ There is no in-tree `ch343` module on this host, and no blacklist entry was foun
 
 ## Expected cases
 
+### How to choose the driver
+
+The two useful checks are the USB ID from `lsusb` and the created tty device:
+
+- `303a:1001` with `/dev/ttyACM0`: Espressif native USB JTAG/serial, handled by `cdc_acm`.
+- `1a86:7523`, `1a86:7522`, or `1a86:5523` with `/dev/ttyUSB0`: older WCH/QinHeng CH34x path, handled by the in-kernel `ch341` driver.
+- `1a86:55d*` with `/dev/ttyACM0`: newer WCH CH342/CH343/CH910x family in CDC mode, handled by `cdc_acm`.
+- `1a86:55d*` with no tty, or with a flaky CDC tty: try WCH's `ch343ser_linux` vendor driver.
+
+WCH's CH343-family README says these chips are CDC-ACM compatible, but their vendor VCP driver can expose device-specific capabilities. It also notes that the generic `cdc_acm` driver must not already be bound to the WCH device when using the vendor VCP driver. That means `cdc_acm` is the first thing to try, and the vendor `ch343` driver is the fallback once `lsusb` confirms a WCH `1a86:*` device.
+
+To capture the exact attach event:
+
+```sh
+./scripts/watch-usb.sh 60
+```
+
 ### Device appears as `1a86:7523`, `1a86:7522`, or `1a86:5523`
 
 The in-kernel `ch341` driver should bind and create a tty device, usually `/dev/ttyUSB0`.
@@ -79,6 +96,15 @@ sudo make install
 ```
 
 Use the vendor driver only after `lsusb` confirms the CH343 adapter is visible and the built-in `ch341` or `cdc_acm` driver did not bind.
+
+If `cdc_acm` bound to a WCH `1a86:55d*` device but the vendor driver is needed, unload the generic driver first:
+
+```sh
+sudo rmmod cdc_acm
+sudo make load
+```
+
+Do not unload `cdc_acm` while using the Espressif native `303a:1001` `/dev/ttyACM0` path, because that is the working driver for that interface.
 
 ## Container or sandbox note
 
