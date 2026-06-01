@@ -1,5 +1,6 @@
-.esphome/
+**/.esphome/
 .git-local/
+.platformio/
 __pycache__/
 *.py[cod]
 *.bin
