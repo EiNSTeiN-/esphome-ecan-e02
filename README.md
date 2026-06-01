@@ -90,7 +90,7 @@ The following were validated with ESPHome 2026.5.1:
 - `configs/ecan-e02-can-listen.yaml.example`: config and compile
 - `configs/ecan-e02-ethernet-rtl8201.yaml.example`: config and compile
 - `configs/ecan-e02-gpio-probe.yaml.example`: config
-- bare firmware flash and boot logs on the ESP32-U4WDH target over CH343 CDC ACM
+- bare firmware flash and boot logs on the ESP32-U4WD target over CH343 CDC ACM; esptool reports this target as `ESP32-U4WDH`
 
 The current generated firmware artifact is the bare serial-only build so accidental first flash does not enable CAN or Ethernet before pins are confirmed.
 
