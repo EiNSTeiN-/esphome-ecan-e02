@@ -11,6 +11,18 @@ The first step is intentionally small: flash a bare ESP32 ESPHome image over USB
 
 ## Quick start
 
+Check what USB serial device is visible:
+
+```sh
+./scripts/usb-check.sh
+```
+
+To watch a replug event:
+
+```sh
+./scripts/watch-usb.sh 60
+```
+
 Check the config:
 
 ```sh
@@ -23,16 +35,17 @@ Compile:
 ./scripts/esphome.sh compile configs/ecan-e02-bare.yaml
 ```
 
-Flash over the CH343 serial adapter:
+Flash over the detected serial interface:
 
 ```sh
 ./scripts/flash-bare.sh
 ```
 
-If the port auto-detect does not find the CH343, pass it explicitly:
+If the port auto-detect does not find the adapter, pass it explicitly. Use `/dev/ttyUSB0` for the external WCH CH34x/CH343 UART path, or `/dev/ttyACM0` for an Espressif native USB CDC/JTAG path:
 
 ```sh
 ./scripts/flash-bare.sh /dev/ttyUSB0
+./scripts/flash-bare.sh /dev/ttyACM0
 ```
 
 Read serial logs:
@@ -51,6 +64,7 @@ The bare firmware enables only serial logging and the local `ecan_e02` component
 - `configs/ecan-e02-can-listen.yaml.example`: ESP32 TWAI/CAN listen-only skeleton
 - `configs/ecan-e02-ethernet-rtl8201.yaml.example`: likely RTL8201 RMII skeleton
 - `docs/pin-tracing.md`: physical tracing checklist
+- `docs/usb-serial.md`: CH343, `cdc_acm`, `ch341`, and Espressif native USB notes
 
 ## Expected next steps
 
@@ -58,6 +72,17 @@ The bare firmware enables only serial logging and the local `ecan_e02` component
 2. Trace CAN transceiver TXD/RXD to ESP32 GPIOs.
 3. Trace RTL8201 MDC, MDIO, REF_CLK, power/reset, and PHY address straps.
 4. Copy an example YAML to a real config, fill in confirmed pins, and validate with `./scripts/esphome.sh config`.
+
+## Local verification
+
+The following were validated locally with ESPHome 2026.5.1:
+
+- `configs/ecan-e02-bare.yaml`: config and compile
+- `configs/ecan-e02-can-listen.yaml.example`: config and compile
+- `configs/ecan-e02-ethernet-rtl8201.yaml.example`: config and compile
+- `configs/ecan-e02-gpio-probe.yaml.example`: config
+
+The current generated firmware artifact is the bare serial-only build so accidental first flash does not enable CAN or Ethernet before pins are confirmed.
 
 ## ESPHome notes
 

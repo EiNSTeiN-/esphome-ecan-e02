@@ -1,7 +1,8 @@
 CONFIG ?= configs/ecan-e02-bare.yaml
 PORT ?=
+EXAMPLES := configs/ecan-e02-can-listen.yaml.example configs/ecan-e02-ethernet-rtl8201.yaml.example configs/ecan-e02-gpio-probe.yaml.example
 
-.PHONY: config compile flash logs version clean
+.PHONY: config compile flash logs version usb-check watch-usb config-examples compile-can compile-ethernet clean
 
 config:
 	./scripts/esphome.sh config "$(CONFIG)"
@@ -18,6 +19,20 @@ logs:
 version:
 	./scripts/esphome.sh version
 
-clean:
-	rm -rf .esphome
+usb-check:
+	./scripts/usb-check.sh
 
+watch-usb:
+	./scripts/watch-usb.sh
+
+config-examples:
+	@for config in $(EXAMPLES); do ./scripts/esphome.sh config "$$config"; done
+
+compile-can:
+	./scripts/esphome.sh compile configs/ecan-e02-can-listen.yaml.example
+
+compile-ethernet:
+	./scripts/esphome.sh compile configs/ecan-e02-ethernet-rtl8201.yaml.example
+
+clean:
+	rm -rf .esphome configs/.esphome
