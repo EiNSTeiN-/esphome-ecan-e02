@@ -69,6 +69,15 @@ env UV_CACHE_DIR=/tmp/uv-cache UV_TOOL_DIR=/tmp/uv-tools uvx --from esphome esph
 
 The helper scripts set those environment variables automatically.
 
+## Git in this workspace
+
+This environment has a read-only `.git` placeholder directory, so this checkout uses `.git-local` as the real Git directory. Use the wrapper for local Git commands:
+
+```sh
+./scripts/git.sh status
+./scripts/git.sh log --oneline
+```
+
 The ESP32 classic RMII data pins are fixed in ESPHome/ESP-IDF:
 
 | ESP32 GPIO | RMII signal |
@@ -81,4 +90,3 @@ The ESP32 classic RMII data pins are fixed in ESPHome/ESP-IDF:
 | GPIO27 | CRS_DV |
 
 The pins still worth tracing are usually `MDC`, `MDIO`, `REF_CLK`, PHY address straps, reset/power enable, and the CAN transceiver TXD/RXD pair.
-
