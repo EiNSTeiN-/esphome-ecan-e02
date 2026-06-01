@@ -3,7 +3,7 @@
 This workspace is set up for an ECAN-E02 board with:
 
 - ESP32-U4WD flash target, treated as a classic ESP32/`esp32dev` in ESPHome
-- CH343 USB serial bridge
+- external CH343 USB-UART adapter for flashing/logging
 - likely RTL8201 RMII Ethernet PHY
 - onboard CAN transceiver, pins still to be confirmed
 

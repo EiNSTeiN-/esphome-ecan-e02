@@ -2,7 +2,7 @@
 
 ## Project Structure
 
-This is an ESPHome bring-up workspace for an ECAN-E02 board with an ESP32-U4WD target, CH343 USB serial, likely RTL8201 RMII Ethernet, and an onboard CAN transceiver.
+This is an ESPHome bring-up workspace for an ECAN-E02 board with an ESP32-U4WD target, an external CH343 USB-UART adapter for flashing/logging, likely RTL8201 RMII Ethernet, and an onboard CAN transceiver.
 
 - `components/ecan_e02/` contains the local ESPHome external component used for board diagnostics and passive GPIO probing.
 - `configs/` contains ESPHome YAMLs. `ecan-e02-bare.yaml` is the safe first-flash target.
@@ -37,4 +37,3 @@ Follow ESPHome component conventions:
 Treat the bare firmware as the baseline until pins are confirmed. GPIO probe configs configure listed pins as inputs only, but do not add flash pins GPIO6-GPIO11 or pins currently used by active Ethernet/CAN configs. GPIO0 is a boot strap pin; only sample it when you know the board boots normally.
 
 Do not enable CAN `NORMAL` mode or Ethernet until the transceiver/PHY pins and power/reset lines have been traced.
-
