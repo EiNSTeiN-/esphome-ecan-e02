@@ -11,6 +11,15 @@ Use this while the board is unpowered unless a step explicitly says to boot the 
 
 If upload fails to enter bootloader, hold BOOT, tap RESET, start upload, then release BOOT when esptool starts connecting.
 
+For repeatable automated flashing, wire the USB-UART control lines to the ESP32:
+
+| USB-UART signal | ESP32 signal |
+| --- | --- |
+| `DTR` | `GPIO0` / `BOOT` |
+| `RTS` | `EN` / `CHIP_PU` / `RESET` |
+
+If those lines are directly wired during bench bring-up, use `./scripts/serial-reset-log.sh <port>` for boot log capture. It keeps `DTR` and `RTS` inactive while reading logs and pulses `RTS` only for reset.
+
 ## CAN transceiver
 
 Find the CAN transceiver package first. Common markings are SN65HVD230, TJA1050, TJA1051, MCP2562, VP230, or similar.
@@ -66,4 +75,3 @@ Do not probe:
 - GPIO6-GPIO11, used by ESP32 flash
 - pins that are already active in another component
 - pins connected to external 5 V logic unless the trace confirms level shifting
-

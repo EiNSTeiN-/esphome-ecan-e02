@@ -55,6 +55,12 @@ Read serial logs:
 ./scripts/logs.sh
 ```
 
+If `DTR` and `RTS` are wired directly from the USB-UART adapter to `GPIO0/BOOT` and `EN/CHIP_PU`, use the reset-log helper instead. It opens the port with both control lines inactive, pulses reset, and captures boot logs:
+
+```sh
+./scripts/serial-reset-log.sh /dev/ttyACM0
+```
+
 The bare firmware enables only serial logging and the local `ecan_e02` component. It does not need WiFi secrets and is the safest target while the board pinout is unknown.
 
 ## Useful files
@@ -65,6 +71,7 @@ The bare firmware enables only serial logging and the local `ecan_e02` component
 - `configs/ecan-e02-can-listen.yaml.example`: ESP32 TWAI/CAN listen-only skeleton
 - `configs/ecan-e02-ethernet-rtl8201.yaml.example`: likely RTL8201 RMII skeleton
 - `scripts/ch343-driver.sh`: fetch/build/load the WCH CH343-family vendor driver
+- `scripts/serial-reset-log.sh`: serial log capture for direct DTR/RTS reset wiring
 - `docs/pin-tracing.md`: physical tracing checklist
 - `docs/usb-serial.md`: CH343, `cdc_acm`, `ch341`, and Espressif native USB notes
 
@@ -75,14 +82,15 @@ The bare firmware enables only serial logging and the local `ecan_e02` component
 3. Trace RTL8201 MDC, MDIO, REF_CLK, power/reset, and PHY address straps.
 4. Copy an example YAML to a real config, fill in confirmed pins, and validate with `./scripts/esphome.sh config`.
 
-## Local verification
+## Verification
 
-The following were validated locally with ESPHome 2026.5.1:
+The following were validated with ESPHome 2026.5.1:
 
 - `configs/ecan-e02-bare.yaml`: config and compile
 - `configs/ecan-e02-can-listen.yaml.example`: config and compile
 - `configs/ecan-e02-ethernet-rtl8201.yaml.example`: config and compile
 - `configs/ecan-e02-gpio-probe.yaml.example`: config
+- bare firmware flash and boot logs on the ESP32-U4WDH target over CH343 CDC ACM
 
 The current generated firmware artifact is the bare serial-only build so accidental first flash does not enable CAN or Ethernet before pins are confirmed.
 

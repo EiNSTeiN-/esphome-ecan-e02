@@ -9,6 +9,7 @@ A Linux host should provide:
 - a USB data cable and port that make the adapter visible in `lsusb`
 - access to the created serial device, usually through the `dialout` group or a root shell
 - a USB serial driver that matches the enumerated USB device
+- optional USB-UART `DTR` and `RTS` lines wired to the ESP32 boot strap and reset pins for automatic flashing
 
 Useful checks:
 
@@ -61,6 +62,23 @@ Recommended order on Linux:
 
 Only use the vendor CH343 driver after `lsusb` confirms a WCH `1a86:*` device. A missing driver normally prevents tty creation, but the USB device should still appear in `lsusb`.
 
+## Auto Bootloader Wiring
+
+For automatic ESP32 bootloader entry, wire the USB-UART control lines to the ESP32 strap/reset pins:
+
+| USB-UART signal | ESP32 signal | Purpose |
+| --- | --- | --- |
+| `DTR` | `GPIO0` / `BOOT` | Pull low during reset to enter the ROM serial bootloader. |
+| `RTS` | `EN` / `CHIP_PU` / `RESET` | Reset the ESP32. |
+
+For bench bring-up on an unknown board, add about 1k series resistance on each control line. For a permanent design, use the normal ESP32 auto-reset transistor circuit rather than direct wiring.
+
+Direct wiring can confuse generic serial terminals because some of them assert `DTR` or `RTS` when opening the port. If logs are needed with direct wiring, use this project's reset-log helper:
+
+```sh
+./scripts/serial-reset-log.sh /dev/ttyACM0
+```
+
 ## Flashing
 
 Auto-detect the serial port and flash the bare bring-up firmware:
@@ -81,6 +99,12 @@ Read logs the same way:
 
 ```sh
 ./scripts/logs.sh /dev/ttyUSB0
+```
+
+For direct `DTR`/`RTS` wiring, prefer:
+
+```sh
+./scripts/serial-reset-log.sh /dev/ttyUSB0
 ```
 
 ## Capturing Attach Events
