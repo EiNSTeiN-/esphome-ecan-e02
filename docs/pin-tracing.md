@@ -39,8 +39,8 @@ Find the CAN transceiver package first. Common markings are SN65HVD230, TJA1050,
 Observed ECAN-E02 CAN path:
 
 ```text
-ESP32 package pin 28 / GPIO10 -> TPT7721 IN1
-ESP32 package pin 27 / GPIO9  <- TPT7721 OUT2
+ESP32 package pin 29 / GPIO10 -> TPT7721 IN1
+ESP32 package pin 28 / GPIO9  <- TPT7721 OUT2
 TPT7721      <-> SIT65HVD233-style CAN transceiver
 ```
 
@@ -50,7 +50,7 @@ The SIT65HVD233-style transceiver `LBK` pin is tied to ground, so hardware trans
 
 Current CAN self-test status: with a 120 ohm resistor across CANH/CANL, TWAI starts successfully on `GPIO10` TX and `GPIO9` RX at `500KBPS`, then the first self-test frame drives the controller to `BUS_OFF` with `tx_err=128`, `tx_fail=1`, and `bus_err=16`. That points to the transmitted bitstream not being observed correctly on RX through the isolator/transceiver path, or the transceiver being disabled/not powered.
 
-If the SIT `RS` pin is too difficult to probe directly, use `configs/ecan-e02-can-gpio-probe.yaml`. It pulses ESP32 `GPIO10` low briefly and samples ESP32 `GPIO9` without starting TWAI, so the controller cannot enter bus-off while the physical TX/RX path is checked. Current GPIO-probe status: direct `gpio_set_level(GPIO10, 1)` still reads back `tx_gpio=0`, while `GPIO9` stays high. That points to the TX line being held low, GPIO10 not being usable as assumed, or the package/GPIO mapping needing re-check.
+If the SIT `RS` pin is too difficult to probe directly, use `configs/ecan-e02-can-gpio-probe.yaml`. It pulses ESP32 `GPIO10` low briefly and samples ESP32 `GPIO9` without starting TWAI, so the controller cannot enter bus-off while the physical TX/RX path is checked. Current GPIO-probe status: direct `gpio_set_level(GPIO10, 1)` still reads back `tx_gpio=0`, while `GPIO9` stays high. That points to the TX line being held low or GPIO10/package pin 29 not being usable as assumed.
 
 Observed CAN protection: board designator `D2` is a 3-pin SOT-23 part marked `EL24`, which matches ST `ESDCAN24-2BLY`, a dual-line CAN TVS protector. This device should be on CANH/CANL and CAN-side ground. If an apparent SIT `RS` trace reaches `D2`, recheck the SIT pin orientation because adjacent SIT pins 6 and 7 are the expected CANL/CANH pins.
 
@@ -86,8 +86,8 @@ Trace these transceiver pins:
 
 | Transceiver signal | Trace to | Notes |
 | --- | --- | --- |
-| TXD | ESP32 package pin 28 / GPIO10 through TPT7721 | Confirmed path: ESP32 `GPIO10` -> TPT7721 `IN1` -> TPT7721 `OUT1` -> SIT `D/TXD`. |
-| RXD | ESP32 package pin 27 / GPIO9 through TPT7721 | Confirmed path: SIT `R/RXD` -> TPT7721 `IN2` -> TPT7721 `OUT2` -> ESP32 `GPIO9`. |
+| TXD | ESP32 package pin 29 / GPIO10 through TPT7721 | Confirmed path: ESP32 `GPIO10` -> TPT7721 `IN1` -> TPT7721 `OUT1` -> SIT `D/TXD`. |
+| RXD | ESP32 package pin 28 / GPIO9 through TPT7721 | Confirmed path: SIT `R/RXD` -> TPT7721 `IN2` -> TPT7721 `OUT2` -> ESP32 `GPIO9`. |
 | RS | Resistor, destination/value not yet confirmed | If this is an HVD233-compatible transceiver, a resistor to ground selects slope-control mode; high level selects standby. Measure powered `RS` voltage and trace the resistor's other end. |
 | CANH/CANL | terminal/connector and D2/EL24 TVS | Confirm connector orientation and SIT pin orientation. |
 | VCC/VIO | 3.3 V or 5 V rail | Determines whether the logic side is ESP32-safe. |
