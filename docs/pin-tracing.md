@@ -26,8 +26,8 @@ Observed ECAN-E02 status LED traces:
 
 | LED label | ESP32 package pin | ESP32 GPIO | Notes |
 | --- | --- | --- | --- |
-| LINK | 24 | GPIO4 | Use `configs/ecan-e02-led-test.yaml` for polarity testing. |
-| ERR | 22 | GPIO2 | GPIO2 is a boot strap pin; only drive it after boot. |
+| LINK | 22 | GPIO2 | GPIO2 is a boot strap pin; only drive it after boot. |
+| ERR | 24 | GPIO4 | Use `configs/ecan-e02-led-test.yaml` for polarity testing. |
 | CAN | 36 | GPIO23 | Conflicts with the common ESP32 RMII `MDC` default, so trace Ethernet management pins before enabling RTL8201. |
 
 The LED test firmware drives LINK, ERR, then CAN for 500 ms each. If the LEDs are active-low, set `status_led_inverted: "true"` in `configs/ecan-e02-led-test.yaml`.

@@ -1,6 +1,6 @@
 substitutions:
-  link_led_pin: GPIO4
-  err_led_pin: GPIO2
+  link_led_pin: GPIO2
+  err_led_pin: GPIO4
   can_led_pin: GPIO23
   status_led_inverted: "false"
 
