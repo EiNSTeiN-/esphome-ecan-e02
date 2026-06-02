@@ -79,7 +79,7 @@ Trace these transceiver pins:
 | --- | --- | --- |
 | TXD | ESP32 package pin 28 / GPIO10 through TPT7721 | Confirmed path: ESP32 `GPIO10` -> TPT7721 `IN1` -> TPT7721 `OUT1` -> SIT `D/TXD`. |
 | RXD | ESP32 package pin 27 / GPIO9 through TPT7721 | Confirmed path: SIT `R/RXD` -> TPT7721 `IN2` -> TPT7721 `OUT2` -> ESP32 `GPIO9`. |
-| STB, S, EN, RS | ESP32 GPIO or rail | If tied to a GPIO, we may need to drive it before CAN works. Prioritize this after the `BUS_OFF` self-test result. |
+| RS | Resistor, destination/value not yet confirmed | If this is an HVD233-compatible transceiver, a resistor to ground selects slope-control mode; high level selects standby. Measure powered `RS` voltage and trace the resistor's other end. |
 | CANH/CANL | terminal/connector and D2/EL24 TVS | Confirm connector orientation and SIT pin orientation. |
 | VCC/VIO | 3.3 V or 5 V rail | Determines whether the logic side is ESP32-safe. |
 | GND | board ground | Confirm common ground. |
