@@ -62,6 +62,13 @@ Observed local power IC: a 5-pin `M 5233` package is confirmed as Microchip/Micr
 | 4 | NC/ADJ | Fixed-output parts leave this unconnected; adjustable parts use a divider. |
 | 5 | OUT | Supplies SIT `VCC` and TPT7721 `VCCA`. |
 
+Other observed power devices:
+
+| Marking | Likely role | Notes |
+| --- | --- | --- |
+| `RDA2L 5T4V.1` | Likely RY8310-class SOT23-6 buck regulator if near an inductor and feedback resistors | Candidate only until the package pins are traced. RY8310 devices include an `EN` pin and generate an adjustable local rail from a higher input. |
+| `AMS1117-3.3` | Fixed 3.3 V linear regulator | No enable pin. In SOT-223, pin 1 is ground, pin 2/tab is output, and pin 3 is input. It is on whenever its input rail is present. |
+
 The matching ESPHome listen-only CAN pins are:
 
 ```yaml
