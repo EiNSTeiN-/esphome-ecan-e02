@@ -1,0 +1,46 @@
+substitutions:
+  can_tx_pin: GPIO10
+  can_rx_pin: GPIO9
+  can_bit_rate: 500KBPS
+  can_mode: LISTENONLY
+
+packages:
+  bare: !include ecan-e02-bare.yaml
+
+canbus:
+  - platform: esp32_can
+    id: can0
+    tx_pin: ${can_tx_pin}
+    rx_pin: ${can_rx_pin}
+    can_id: 0x02
+    bit_rate: ${can_bit_rate}
+    mode: ${can_mode}
+    on_frame:
+      - can_id: 0x000
+        can_id_mask: 0x000
+        then:
+          - lambda: |-
+              std::string bytes;
+              char item[4];
+              for (auto b : x) {
+                snprintf(item, sizeof(item), "%02X", b);
+                if (!bytes.empty()) {
+                  bytes += " ";
+                }
+                bytes += item;
+              }
+              ESP_LOGI("ecan_can", "rx id=0x%08X rtr=%s len=%u data=%s",
+                       static_cast<unsigned>(can_id),
+                       remote_transmission_request ? "true" : "false",
+                       static_cast<unsigned>(x.size()),
+                       bytes.c_str());
+
+button:
+  - platform: template
+    name: ${friendly_name} CAN Test Frame
+    disabled_by_default: true
+    on_press:
+      - canbus.send:
+          canbus_id: can0
+          can_id: 0x123
+          data: [0x45, 0x43, 0x41, 0x4E]

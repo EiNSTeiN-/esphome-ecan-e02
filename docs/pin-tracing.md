@@ -24,6 +24,23 @@ If those lines are directly wired during bench bring-up, use `./scripts/serial-r
 
 Find the CAN transceiver package first. Common markings are SN65HVD230, TJA1050, TJA1051, MCP2562, VP230, or similar.
 
+Observed ECAN-E02 CAN path:
+
+```text
+ESP32 GPIO10 -> TPT7721 IN2
+ESP32 GPIO9  <- TPT7721 OUT2
+TPT7721      <-> SIT65HVD233-style CAN transceiver
+```
+
+The matching ESPHome listen-only CAN pins are:
+
+```yaml
+tx_pin: GPIO10
+rx_pin: GPIO9
+```
+
+GPIO9 and GPIO10 are `SD_DATA_2` and `SD_DATA_3` package pins in the ESP32 pin table. On the ESP32-U4WD target, the in-package flash mapping does not use these two pins, but keep the first CAN firmware in `LISTENONLY` mode until bus RX is confirmed.
+
 Trace these transceiver pins:
 
 | Transceiver signal | Trace to | Notes |
