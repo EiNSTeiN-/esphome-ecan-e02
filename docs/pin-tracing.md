@@ -44,7 +44,7 @@ ESP32 package pin 27 / GPIO9  <- TPT7721 OUT2
 TPT7721      <-> SIT65HVD233-style CAN transceiver
 ```
 
-On the TPT7721 SOP8 top-view pinout, this means the ESP32 side is using `pin 7 = IN1` for CAN TX and `pin 6 = OUT2` for CAN RX. The transceiver side of those isolated channels should be `pin 2 = OUT1` driving the CAN transceiver TXD input, and `pin 3 = IN2` receiving the CAN transceiver RXD output.
+On the TPT7721 SOP8 top-view pinout, this means the ESP32 side is using `pin 7 = IN1` for CAN TX and `pin 6 = OUT2` for CAN RX. The transceiver side of those isolated channels is confirmed as `pin 2 = OUT1` driving SIT `pin 1 = D/TXD`, and SIT `pin 4 = R/RXD` driving TPT7721 `pin 3 = IN2`.
 
 The SIT65HVD233-style transceiver `LBK` pin is tied to ground, so hardware transceiver loopback is disabled. Without another CAN node, use `configs/ecan-e02-can-self-test.yaml` for an ESP32 TWAI no-ACK self-reception test. That verifies the ESP32 TWAI peripheral and GPIO routing, but it does not prove the CANH/CANL physical bus path.
 
@@ -65,8 +65,8 @@ Trace these transceiver pins:
 
 | Transceiver signal | Trace to | Notes |
 | --- | --- | --- |
-| TXD | ESP32 GPIO | This becomes ESPHome `tx_pin`. |
-| RXD | ESP32 GPIO | This becomes ESPHome `rx_pin`. |
+| TXD | ESP32 package pin 28 / GPIO10 through TPT7721 | Confirmed path: ESP32 `GPIO10` -> TPT7721 `IN1` -> TPT7721 `OUT1` -> SIT `D/TXD`. |
+| RXD | ESP32 package pin 27 / GPIO9 through TPT7721 | Confirmed path: SIT `R/RXD` -> TPT7721 `IN2` -> TPT7721 `OUT2` -> ESP32 `GPIO9`. |
 | STB, S, EN, RS | ESP32 GPIO or rail | If tied to a GPIO, we may need to drive it before CAN works. Prioritize this after the `BUS_OFF` self-test result. |
 | CANH/CANL | terminal/connector | Confirm connector orientation. |
 | VCC/VIO | 3.3 V or 5 V rail | Determines whether the logic side is ESP32-safe. |
