@@ -50,6 +50,8 @@ The SIT65HVD233-style transceiver `LBK` pin is tied to ground, so hardware trans
 
 Current CAN self-test status: with a 120 ohm resistor across CANH/CANL, TWAI starts successfully on `GPIO10` TX and `GPIO9` RX at `500KBPS`, then the first self-test frame drives the controller to `BUS_OFF` with `tx_err=128`, `tx_fail=1`, and `bus_err=16`. That points to the transmitted bitstream not being observed correctly on RX through the isolator/transceiver path, or the transceiver being disabled/not powered.
 
+Observed CAN protection: board designator `D2` is a 3-pin SOT-23 part marked `EL24`, which matches ST `ESDCAN24-2BLY`, a dual-line CAN TVS protector. This device should be on CANH/CANL and CAN-side ground. If an apparent SIT `RS` trace reaches `D2`, recheck the SIT pin orientation because adjacent SIT pins 6 and 7 are the expected CANL/CANH pins.
+
 Observed local power IC: a 5-pin `M 5233` package is confirmed as Microchip/Micrel MIC5233. Its input and enable are tied high, and its output supplies SIT `VCC` plus TPT7721 `VCCA` on the CAN/transceiver side.
 
 | MIC5233 pin | Signal | Status |
@@ -78,7 +80,7 @@ Trace these transceiver pins:
 | TXD | ESP32 package pin 28 / GPIO10 through TPT7721 | Confirmed path: ESP32 `GPIO10` -> TPT7721 `IN1` -> TPT7721 `OUT1` -> SIT `D/TXD`. |
 | RXD | ESP32 package pin 27 / GPIO9 through TPT7721 | Confirmed path: SIT `R/RXD` -> TPT7721 `IN2` -> TPT7721 `OUT2` -> ESP32 `GPIO9`. |
 | STB, S, EN, RS | ESP32 GPIO or rail | If tied to a GPIO, we may need to drive it before CAN works. Prioritize this after the `BUS_OFF` self-test result. |
-| CANH/CANL | terminal/connector | Confirm connector orientation. |
+| CANH/CANL | terminal/connector and D2/EL24 TVS | Confirm connector orientation and SIT pin orientation. |
 | VCC/VIO | 3.3 V or 5 V rail | Determines whether the logic side is ESP32-safe. |
 | GND | board ground | Confirm common ground. |
 
