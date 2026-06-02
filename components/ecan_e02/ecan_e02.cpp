@@ -53,6 +53,38 @@ static bool get_twai_timing(uint32_t bit_rate_kbps, twai_timing_config_t *config
       return false;
   }
 }
+
+static const char *twai_state_to_string(twai_state_t state) {
+  switch (state) {
+    case TWAI_STATE_STOPPED:
+      return "STOPPED";
+    case TWAI_STATE_RUNNING:
+      return "RUNNING";
+    case TWAI_STATE_BUS_OFF:
+      return "BUS_OFF";
+    case TWAI_STATE_RECOVERING:
+      return "RECOVERING";
+    default:
+      return "UNKNOWN";
+  }
+}
+
+static void log_twai_status(const char *context) {
+  twai_status_info_t status = {};
+  esp_err_t err = twai_get_status_info(&status);
+  if (err != ESP_OK) {
+    ESP_LOGW(TAG, "CAN self-test status %s unavailable: %s", context, esp_err_to_name(err));
+    return;
+  }
+
+  ESP_LOGW(TAG,
+           "CAN self-test status %s: state=%s txq=%" PRIu32 " rxq=%" PRIu32 " tx_err=%" PRIu32
+           " rx_err=%" PRIu32 " tx_fail=%" PRIu32 " rx_missed=%" PRIu32 " rx_overrun=%" PRIu32
+           " arb_lost=%" PRIu32 " bus_err=%" PRIu32,
+           context, twai_state_to_string(status.state), status.msgs_to_tx, status.msgs_to_rx,
+           status.tx_error_counter, status.rx_error_counter, status.tx_failed_count, status.rx_missed_count,
+           status.rx_overrun_count, status.arb_lost_count, status.bus_error_count);
+}
 #endif
 
 void EcanE02Component::setup() {
@@ -161,6 +193,7 @@ bool EcanE02Component::setup_can_self_test_() {
 
   ESP_LOGI(TAG, "CAN self-test ready in NO_ACK mode on tx=GPIO%u rx=GPIO%u at %" PRIu32 "KBPS",
            this->can_self_test_tx_pin_, this->can_self_test_rx_pin_, this->can_self_test_bit_rate_kbps_);
+  log_twai_status("after start");
   return true;
 #endif
 }
@@ -184,6 +217,7 @@ void EcanE02Component::run_can_self_test_() {
   esp_err_t err = twai_transmit(&tx_message, pdMS_TO_TICKS(100));
   if (err != ESP_OK) {
     ESP_LOGE(TAG, "CAN self-test tx failed seq=%" PRIu32 ": %s", sequence, esp_err_to_name(err));
+    log_twai_status("after tx failure");
     return;
   }
 
@@ -191,6 +225,7 @@ void EcanE02Component::run_can_self_test_() {
   err = twai_receive(&rx_message, pdMS_TO_TICKS(500));
   if (err != ESP_OK) {
     ESP_LOGE(TAG, "CAN self-test rx timeout seq=%" PRIu32 ": %s", sequence, esp_err_to_name(err));
+    log_twai_status("after rx timeout");
     return;
   }
 

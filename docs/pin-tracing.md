@@ -46,6 +46,8 @@ TPT7721      <-> SIT65HVD233-style CAN transceiver
 
 The SIT65HVD233-style transceiver `LBK` pin is tied to ground, so hardware transceiver loopback is disabled. Without another CAN node, use `configs/ecan-e02-can-self-test.yaml` for an ESP32 TWAI no-ACK self-reception test. That verifies the ESP32 TWAI peripheral and GPIO routing, but it does not prove the CANH/CANL physical bus path.
 
+Current CAN self-test status: TWAI starts successfully on `GPIO10` TX and `GPIO9` RX at `500KBPS`, then the first self-test frame drives the controller to `BUS_OFF` with `tx_err=128`, `tx_fail=1`, and `bus_err=16`. That points to the transmitted bitstream not being observed correctly on RX through the isolator/transceiver path, or the transceiver being disabled/not powered.
+
 The matching ESPHome listen-only CAN pins are:
 
 ```yaml
@@ -63,7 +65,7 @@ Trace these transceiver pins:
 | --- | --- | --- |
 | TXD | ESP32 GPIO | This becomes ESPHome `tx_pin`. |
 | RXD | ESP32 GPIO | This becomes ESPHome `rx_pin`. |
-| STB, S, EN, RS | ESP32 GPIO or rail | If tied to a GPIO, we may need to drive it before CAN works. |
+| STB, S, EN, RS | ESP32 GPIO or rail | If tied to a GPIO, we may need to drive it before CAN works. Prioritize this after the `BUS_OFF` self-test result. |
 | CANH/CANL | terminal/connector | Confirm connector orientation. |
 | VCC/VIO | 3.3 V or 5 V rail | Determines whether the logic side is ESP32-safe. |
 | GND | board ground | Confirm common ground. |
