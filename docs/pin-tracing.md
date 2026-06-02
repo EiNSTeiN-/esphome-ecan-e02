@@ -50,6 +50,16 @@ The SIT65HVD233-style transceiver `LBK` pin is tied to ground, so hardware trans
 
 Current CAN self-test status: with a 120 ohm resistor across CANH/CANL, TWAI starts successfully on `GPIO10` TX and `GPIO9` RX at `500KBPS`, then the first self-test frame drives the controller to `BUS_OFF` with `tx_err=128`, `tx_fail=1`, and `bus_err=16`. That points to the transmitted bitstream not being observed correctly on RX through the isolator/transceiver path, or the transceiver being disabled/not powered.
 
+Observed local power IC: a 5-pin `M 5233` package is confirmed as Microchip/Micrel MIC5233. Treat it as an LDO until traced:
+
+| MIC5233 pin | Signal | Probe |
+| --- | --- | --- |
+| 1 | IN | Input rail. |
+| 2 | GND | Regulator ground; confirm whether it is board ground or the isolated CAN-side ground. |
+| 3 | EN | Enable; should be high for the regulator to run. |
+| 4 | NC/ADJ | Fixed-output parts leave this unconnected; adjustable parts use a divider. |
+| 5 | OUT | Regulated output, likely a local 3.3 V rail. |
+
 The matching ESPHome listen-only CAN pins are:
 
 ```yaml
