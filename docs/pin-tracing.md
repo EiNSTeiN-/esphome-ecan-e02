@@ -78,7 +78,7 @@ tx_pin: GPIO10
 rx_pin: GPIO9
 ```
 
-GPIO9 and GPIO10 are `SD_DATA_2` and `SD_DATA_3` package pins in the ESP32 pin table. On the ESP32-U4WD target, the in-package flash mapping does not use these two pins, but keep the first CAN firmware in `LISTENONLY` mode until bus RX is confirmed.
+GPIO9 and GPIO10 are `SD_DATA_2` and `SD_DATA_3` package pins in the ESP32 pin table. ESPHome warns that these pins may be used by flash in quad-I/O mode, but this project explicitly sets `board_build.flash_mode: dio`; generated ESP-IDF config and boot logs both report `DIO`. Espressif's ESP32-U4WDH in-package flash mapping uses `GPIO16`, `GPIO17`, `SD_DATA_0`, `SD_DATA_1`, `SD_CMD`, and `SD_CLK`, not `SD_DATA_2` or `SD_DATA_3`. That makes flash-mode clobbering unlikely for this board. Keep the first CAN firmware in `LISTENONLY` mode until bus RX is confirmed.
 
 Do not short CANH directly to CANL for testing. If the bus side needs a local load, use approximately 120 ohms across CANH/CANL.
 
