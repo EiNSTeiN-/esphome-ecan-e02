@@ -7,6 +7,9 @@ substitutions:
 packages:
   bare: !include ecan-e02-bare.yaml
 
+esphome:
+  build_path: build/ecan-e02-can-listen
+
 canbus:
   - platform: esp32_can
     id: can0

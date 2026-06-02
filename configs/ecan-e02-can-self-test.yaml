@@ -6,6 +6,9 @@ substitutions:
 packages:
   bare: !include ecan-e02-bare.yaml
 
+esphome:
+  build_path: build/ecan-e02-can-self-test
+
 ecan_e02:
   id: board
   update_interval: 5s
