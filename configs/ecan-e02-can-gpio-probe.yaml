@@ -1,0 +1,55 @@
+substitutions:
+  can_tx_pin: GPIO10
+  can_rx_pin: GPIO9
+
+packages:
+  bare: !include ecan-e02-bare.yaml
+
+esphome:
+  build_path: build/ecan-e02-can-gpio-probe
+  on_boot:
+    priority: 800
+    then:
+      - lambda: |-
+          gpio_set_direction(GPIO_NUM_10, GPIO_MODE_OUTPUT);
+          gpio_set_level(GPIO_NUM_10, 1);
+
+binary_sensor:
+  - platform: gpio
+    id: can_rx_probe
+    name: ${friendly_name} CAN RX GPIO Probe
+    internal: true
+    pin:
+      number: ${can_rx_pin}
+      inverted: false
+      mode:
+        input: true
+        pullup: false
+        pulldown: false
+
+interval:
+  - interval: 2s
+    then:
+      - lambda: |-
+          gpio_set_level(GPIO_NUM_10, 1);
+      - delay: 50ms
+      - lambda: |-
+          ESP_LOGI("can_gpio_probe", "TXD=recessive/high tx_gpio=%d rx_gpio=%d rx_sensor=%u",
+                   gpio_get_level(GPIO_NUM_10), gpio_get_level(GPIO_NUM_9), id(can_rx_probe).state ? 1 : 0);
+      - lambda: |-
+          gpio_set_level(GPIO_NUM_10, 0);
+      - delay: 1ms
+      - lambda: |-
+          ESP_LOGI("can_gpio_probe", "TXD=dominant/low +1ms tx_gpio=%d rx_gpio=%d rx_sensor=%u",
+                   gpio_get_level(GPIO_NUM_10), gpio_get_level(GPIO_NUM_9), id(can_rx_probe).state ? 1 : 0);
+      - delay: 5ms
+      - lambda: |-
+          ESP_LOGI("can_gpio_probe", "TXD=dominant/low +6ms tx_gpio=%d rx_gpio=%d rx_sensor=%u",
+                   gpio_get_level(GPIO_NUM_10), gpio_get_level(GPIO_NUM_9), id(can_rx_probe).state ? 1 : 0);
+      - delay: 5ms
+      - lambda: |-
+          gpio_set_level(GPIO_NUM_10, 1);
+      - delay: 50ms
+      - lambda: |-
+          ESP_LOGI("can_gpio_probe", "TXD=released/high tx_gpio=%d rx_gpio=%d rx_sensor=%u",
+                   gpio_get_level(GPIO_NUM_10), gpio_get_level(GPIO_NUM_9), id(can_rx_probe).state ? 1 : 0);
