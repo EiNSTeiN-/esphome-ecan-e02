@@ -39,10 +39,12 @@ Find the CAN transceiver package first. Common markings are SN65HVD230, TJA1050,
 Observed ECAN-E02 CAN path:
 
 ```text
-ESP32 GPIO10 -> TPT7721 IN2
+ESP32 GPIO10 -> TPT7721 IN1
 ESP32 GPIO9  <- TPT7721 OUT2
 TPT7721      <-> SIT65HVD233-style CAN transceiver
 ```
+
+On the TPT7721 SOP8 top-view pinout, this means the ESP32 side is using `pin 7 = IN1` for CAN TX and `pin 6 = OUT2` for CAN RX. The transceiver side of those isolated channels should be `pin 2 = OUT1` driving the CAN transceiver TXD input, and `pin 3 = IN2` receiving the CAN transceiver RXD output.
 
 The SIT65HVD233-style transceiver `LBK` pin is tied to ground, so hardware transceiver loopback is disabled. Without another CAN node, use `configs/ecan-e02-can-self-test.yaml` for an ESP32 TWAI no-ACK self-reception test. That verifies the ESP32 TWAI peripheral and GPIO routing, but it does not prove the CANH/CANL physical bus path.
 
