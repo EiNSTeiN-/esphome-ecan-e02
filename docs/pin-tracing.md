@@ -39,8 +39,8 @@ Find the CAN transceiver package first. Common markings are SN65HVD230, TJA1050,
 Observed ECAN-E02 CAN path:
 
 ```text
-ESP32 GPIO10 -> TPT7721 IN1
-ESP32 GPIO9  <- TPT7721 OUT2
+ESP32 package pin 28 / GPIO10 -> TPT7721 IN1
+ESP32 package pin 27 / GPIO9  <- TPT7721 OUT2
 TPT7721      <-> SIT65HVD233-style CAN transceiver
 ```
 
