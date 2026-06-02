@@ -1,0 +1,15 @@
+substitutions:
+  can_tx_pin: GPIO10
+  can_rx_pin: GPIO9
+  can_bit_rate: 500KBPS
+
+packages:
+  bare: !include ecan-e02-bare.yaml
+
+ecan_e02:
+  id: board
+  update_interval: 5s
+  can_self_test:
+    tx_pin: ${can_tx_pin}
+    rx_pin: ${can_rx_pin}
+    bit_rate: ${can_bit_rate}

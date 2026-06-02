@@ -1,0 +1,43 @@
+substitutions:
+  link_led_pin: GPIO4
+  err_led_pin: GPIO2
+  can_led_pin: GPIO23
+  status_led_inverted: "false"
+
+packages:
+  bare: !include ecan-e02-bare.yaml
+
+output:
+  - platform: gpio
+    id: link_led
+    pin:
+      number: ${link_led_pin}
+      inverted: ${status_led_inverted}
+  - platform: gpio
+    id: err_led
+    pin:
+      number: ${err_led_pin}
+      inverted: ${status_led_inverted}
+  - platform: gpio
+    id: can_led
+    pin:
+      number: ${can_led_pin}
+      inverted: ${status_led_inverted}
+
+interval:
+  - interval: 6s
+    then:
+      - logger.log: "LED test: LINK"
+      - output.turn_on: link_led
+      - delay: 500ms
+      - output.turn_off: link_led
+      - delay: 500ms
+      - logger.log: "LED test: ERR"
+      - output.turn_on: err_led
+      - delay: 500ms
+      - output.turn_off: err_led
+      - delay: 500ms
+      - logger.log: "LED test: CAN"
+      - output.turn_on: can_led
+      - delay: 500ms
+      - output.turn_off: can_led

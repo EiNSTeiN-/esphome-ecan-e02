@@ -20,6 +20,18 @@ For repeatable automated flashing, wire the USB-UART control lines to the ESP32:
 
 If those lines are directly wired during bench bring-up, use `./scripts/serial-reset-log.sh <port>` for boot log capture. It keeps `DTR` and `RTS` inactive while reading logs and pulses `RTS` only for reset.
 
+## Status LEDs
+
+Observed ECAN-E02 status LED traces:
+
+| LED label | ESP32 package pin | ESP32 GPIO | Notes |
+| --- | --- | --- | --- |
+| LINK | 24 | GPIO4 | Use `configs/ecan-e02-led-test.yaml` for polarity testing. |
+| ERR | 22 | GPIO2 | GPIO2 is a boot strap pin; only drive it after boot. |
+| CAN | 36 | GPIO23 | Conflicts with the common ESP32 RMII `MDC` default, so trace Ethernet management pins before enabling RTL8201. |
+
+The LED test firmware drives LINK, ERR, then CAN for 500 ms each. If the LEDs are active-low, set `status_led_inverted: "true"` in `configs/ecan-e02-led-test.yaml`.
+
 ## CAN transceiver
 
 Find the CAN transceiver package first. Common markings are SN65HVD230, TJA1050, TJA1051, MCP2562, VP230, or similar.
@@ -32,6 +44,8 @@ ESP32 GPIO9  <- TPT7721 OUT2
 TPT7721      <-> SIT65HVD233-style CAN transceiver
 ```
 
+The SIT65HVD233-style transceiver `LBK` pin is tied to ground, so hardware transceiver loopback is disabled. Without another CAN node, use `configs/ecan-e02-can-self-test.yaml` for an ESP32 TWAI no-ACK self-reception test. That verifies the ESP32 TWAI peripheral and GPIO routing, but it does not prove the CANH/CANL physical bus path.
+
 The matching ESPHome listen-only CAN pins are:
 
 ```yaml
@@ -40,6 +54,8 @@ rx_pin: GPIO9
 ```
 
 GPIO9 and GPIO10 are `SD_DATA_2` and `SD_DATA_3` package pins in the ESP32 pin table. On the ESP32-U4WD target, the in-package flash mapping does not use these two pins, but keep the first CAN firmware in `LISTENONLY` mode until bus RX is confirmed.
+
+Do not short CANH directly to CANL for testing. If the bus side needs a local load, use approximately 120 ohms across CANH/CANL.
 
 Trace these transceiver pins:
 
@@ -73,13 +89,13 @@ On a typical RTL8201 design, these are the variable or board-specific signals to
 
 | Signal | Common ESP32 GPIO | Why it matters |
 | --- | --- | --- |
-| MDC | GPIO23 | ESPHome requires `mdc_pin`. |
+| MDC | Trace required | ESPHome requires `mdc_pin`; GPIO23 is already traced to the CAN LED. |
 | MDIO | GPIO18 | ESPHome requires `mdio_pin`. |
 | REF_CLK | GPIO0 input, GPIO16 output, or GPIO17 output | ESPHome requires `clk.mode` and `clk.pin`. |
 | PHYAD straps | address 0 or 1 are common | ESPHome requires `phy_addr`. |
 | RESET or POWER_EN | sometimes GPIO16/17 or tied high | ESPHome may need `power_pin`. |
 
-Start with the example in `configs/ecan-e02-ethernet-rtl8201.yaml.example` only if traces match MDC GPIO23, MDIO GPIO18, REF_CLK on GPIO0, and PHY address 0.
+Start with the example in `configs/ecan-e02-ethernet-rtl8201.yaml.example` only after replacing MDC, MDIO, REF_CLK, and PHY address with confirmed traces.
 
 GPIO0 is also a boot strap pin. If the board uses GPIO0 as RMII REF_CLK input, the PHY clock circuit must not prevent normal boot mode.
 

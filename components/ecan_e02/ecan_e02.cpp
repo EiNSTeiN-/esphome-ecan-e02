@@ -13,16 +13,57 @@
 #include "esp_system.h"
 #endif
 
+#if defined(USE_ESP32) && defined(USE_ECAN_E02_CAN_SELF_TEST)
+#include "driver/twai.h"
+#endif
+
 namespace esphome {
 namespace ecan_e02 {
 
 static const char *const TAG = "ecan_e02";
+
+#if defined(USE_ESP32) && defined(USE_ECAN_E02_CAN_SELF_TEST)
+static bool get_twai_timing(uint32_t bit_rate_kbps, twai_timing_config_t *config) {
+  switch (bit_rate_kbps) {
+    case 25:
+      *config = TWAI_TIMING_CONFIG_25KBITS();
+      return true;
+    case 50:
+      *config = TWAI_TIMING_CONFIG_50KBITS();
+      return true;
+    case 100:
+      *config = TWAI_TIMING_CONFIG_100KBITS();
+      return true;
+    case 125:
+      *config = TWAI_TIMING_CONFIG_125KBITS();
+      return true;
+    case 250:
+      *config = TWAI_TIMING_CONFIG_250KBITS();
+      return true;
+    case 500:
+      *config = TWAI_TIMING_CONFIG_500KBITS();
+      return true;
+    case 800:
+      *config = TWAI_TIMING_CONFIG_800KBITS();
+      return true;
+    case 1000:
+      *config = TWAI_TIMING_CONFIG_1MBITS();
+      return true;
+    default:
+      return false;
+  }
+}
+#endif
 
 void EcanE02Component::setup() {
   for (auto *pin : this->probe_pins_) {
     pin->setup();
   }
   ESP_LOGI(TAG, "ECAN-E02 bring-up component ready");
+
+  if (this->can_self_test_enabled_) {
+    this->can_self_test_ready_ = this->setup_can_self_test_();
+  }
 }
 
 void EcanE02Component::dump_config() {
@@ -57,9 +98,19 @@ void EcanE02Component::dump_config() {
       LOG_PIN("  Probe Pin: ", pin);
     }
   }
+
+  if (this->can_self_test_enabled_) {
+    ESP_LOGCONFIG(TAG, "  CAN self-test: tx=GPIO%u rx=GPIO%u bit_rate=%" PRIu32 "KBPS ready=%s",
+                  this->can_self_test_tx_pin_, this->can_self_test_rx_pin_, this->can_self_test_bit_rate_kbps_,
+                  TRUEFALSE(this->can_self_test_ready_));
+  }
 }
 
 void EcanE02Component::update() {
+  if (this->can_self_test_ready_) {
+    this->run_can_self_test_();
+  }
+
   if (this->probe_pins_.empty()) {
     return;
   }
@@ -77,6 +128,87 @@ void EcanE02Component::update() {
   ESP_LOGI(TAG, "Probe states: %s", states.c_str());
 }
 
+bool EcanE02Component::setup_can_self_test_() {
+#if !defined(USE_ESP32) || !defined(USE_ECAN_E02_CAN_SELF_TEST)
+  ESP_LOGE(TAG, "CAN self-test is only available on ESP32 targets");
+  return false;
+#else
+  twai_timing_config_t timing_config;
+  if (!get_twai_timing(this->can_self_test_bit_rate_kbps_, &timing_config)) {
+    ESP_LOGE(TAG, "Unsupported CAN self-test bit rate: %" PRIu32 "KBPS", this->can_self_test_bit_rate_kbps_);
+    return false;
+  }
+
+  twai_general_config_t general_config =
+      TWAI_GENERAL_CONFIG_DEFAULT(static_cast<gpio_num_t>(this->can_self_test_tx_pin_),
+                                  static_cast<gpio_num_t>(this->can_self_test_rx_pin_), TWAI_MODE_NO_ACK);
+  general_config.tx_queue_len = 4;
+  general_config.rx_queue_len = 4;
+  twai_filter_config_t filter_config = TWAI_FILTER_CONFIG_ACCEPT_ALL();
+
+  esp_err_t err = twai_driver_install(&general_config, &timing_config, &filter_config);
+  if (err != ESP_OK) {
+    ESP_LOGE(TAG, "CAN self-test driver install failed: %s", esp_err_to_name(err));
+    return false;
+  }
+
+  err = twai_start();
+  if (err != ESP_OK) {
+    ESP_LOGE(TAG, "CAN self-test driver start failed: %s", esp_err_to_name(err));
+    twai_driver_uninstall();
+    return false;
+  }
+
+  ESP_LOGI(TAG, "CAN self-test ready in NO_ACK mode on tx=GPIO%u rx=GPIO%u at %" PRIu32 "KBPS",
+           this->can_self_test_tx_pin_, this->can_self_test_rx_pin_, this->can_self_test_bit_rate_kbps_);
+  return true;
+#endif
+}
+
+void EcanE02Component::run_can_self_test_() {
+#if defined(USE_ESP32) && defined(USE_ECAN_E02_CAN_SELF_TEST)
+  uint32_t sequence = ++this->can_self_test_counter_;
+  twai_message_t tx_message = {};
+  tx_message.identifier = 0x321;
+  tx_message.flags = TWAI_MSG_FLAG_SELF;
+  tx_message.data_length_code = 8;
+  tx_message.data[0] = 0x45;
+  tx_message.data[1] = 0x43;
+  tx_message.data[2] = 0x41;
+  tx_message.data[3] = 0x4E;
+  tx_message.data[4] = static_cast<uint8_t>((sequence >> 24) & 0xFF);
+  tx_message.data[5] = static_cast<uint8_t>((sequence >> 16) & 0xFF);
+  tx_message.data[6] = static_cast<uint8_t>((sequence >> 8) & 0xFF);
+  tx_message.data[7] = static_cast<uint8_t>(sequence & 0xFF);
+
+  esp_err_t err = twai_transmit(&tx_message, pdMS_TO_TICKS(100));
+  if (err != ESP_OK) {
+    ESP_LOGE(TAG, "CAN self-test tx failed seq=%" PRIu32 ": %s", sequence, esp_err_to_name(err));
+    return;
+  }
+
+  twai_message_t rx_message = {};
+  err = twai_receive(&rx_message, pdMS_TO_TICKS(500));
+  if (err != ESP_OK) {
+    ESP_LOGE(TAG, "CAN self-test rx timeout seq=%" PRIu32 ": %s", sequence, esp_err_to_name(err));
+    return;
+  }
+
+  bool pass = rx_message.identifier == tx_message.identifier && rx_message.data_length_code == tx_message.data_length_code;
+  for (uint8_t i = 0; pass && i < tx_message.data_length_code; i++) {
+    pass = rx_message.data[i] == tx_message.data[i];
+  }
+
+  if (pass) {
+    ESP_LOGI(TAG, "CAN self-test PASS seq=%" PRIu32 " id=0x%03" PRIX32 " data=%02X %02X %02X %02X %02X %02X %02X %02X",
+             sequence, rx_message.identifier, rx_message.data[0], rx_message.data[1], rx_message.data[2],
+             rx_message.data[3], rx_message.data[4], rx_message.data[5], rx_message.data[6], rx_message.data[7]);
+  } else {
+    ESP_LOGE(TAG, "CAN self-test FAIL seq=%" PRIu32 " rx_id=0x%03" PRIX32 " rx_len=%u", sequence,
+             rx_message.identifier, rx_message.data_length_code);
+  }
+#endif
+}
+
 }  // namespace ecan_e02
 }  // namespace esphome
-

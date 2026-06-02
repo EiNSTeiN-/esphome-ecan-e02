@@ -68,7 +68,9 @@ The bare firmware enables only serial logging and the local `ecan_e02` component
 - `configs/ecan-e02-bare.yaml`: first flash target
 - `configs/ecan-e02-wifi.yaml.example`: optional WiFi/API/OTA layer once serial flashing works
 - `configs/ecan-e02-gpio-probe.yaml.example`: passive GPIO input sampler for suspected pins
+- `configs/ecan-e02-led-test.yaml`: status LED sequencer for traced LINK, ERR, and CAN LEDs
 - `configs/ecan-e02-can-listen.yaml`: traced CAN listen-only config, `GPIO10` TX and `GPIO9` RX through the TPT7721 isolator
+- `configs/ecan-e02-can-self-test.yaml`: no-peer ESP32 TWAI self-reception test for the traced CAN pins
 - `configs/ecan-e02-can-listen.yaml.example`: ESP32 TWAI/CAN listen-only skeleton
 - `configs/ecan-e02-ethernet-rtl8201.yaml.example`: likely RTL8201 RMII skeleton
 - `scripts/ch343-driver.sh`: fetch/build/load the WCH CH343-family vendor driver
@@ -88,7 +90,9 @@ The bare firmware enables only serial logging and the local `ecan_e02` component
 The following were validated with ESPHome 2026.5.1:
 
 - `configs/ecan-e02-bare.yaml`: config and compile
+- `configs/ecan-e02-led-test.yaml`: config and compile
 - `configs/ecan-e02-can-listen.yaml`: config
+- `configs/ecan-e02-can-self-test.yaml`: config and compile
 - `configs/ecan-e02-can-listen.yaml.example`: config and compile
 - `configs/ecan-e02-ethernet-rtl8201.yaml.example`: config and compile
 - `configs/ecan-e02-gpio-probe.yaml.example`: config
