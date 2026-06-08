@@ -6,8 +6,8 @@ Use this while the board is unpowered unless a step explicitly says to boot the 
 
 1. Plug in the CH343 USB cable.
 2. Run `./scripts/serial-port.sh`.
-3. Run `./scripts/flash-bare.sh <port>` if auto-detect does not pick the right port.
-4. Run `./scripts/logs.sh <port>` and confirm the `ecan_e02` boot diagnostics appear.
+3. Run `./dev/scripts/flash-bare.sh <port>` if auto-detect does not pick the right port.
+4. Run `./scripts/logs.sh <port> dev/configs/ecan-e02-bare.yaml` and confirm the `ecan_e02` boot diagnostics appear.
 
 If upload fails to enter bootloader, hold BOOT, tap RESET, start upload, then release BOOT when esptool starts connecting.
 
@@ -18,7 +18,7 @@ For repeatable automated flashing, wire the USB-UART control lines to the ESP32:
 | `DTR` | `GPIO0` / `BOOT` |
 | `RTS` | `EN` / `CHIP_PU` / `RESET` |
 
-If those lines are directly wired during bench bring-up, use `./scripts/serial-reset-log.sh <port>` for boot log capture. It keeps `DTR` and `RTS` inactive while reading logs and pulses `RTS` only for reset.
+If those lines are directly wired during bench bring-up, use `./dev/scripts/serial-reset-log.sh <port>` for boot log capture. It keeps `DTR` and `RTS` inactive while reading logs and pulses `RTS` only for reset.
 
 ## Status LEDs
 
@@ -27,10 +27,10 @@ Observed ECAN-E02 status LED traces:
 | LED label | ESP32 package pin | ESP32 GPIO | Notes |
 | --- | --- | --- | --- |
 | LINK | 22 | GPIO2 | GPIO2 is a boot strap pin; only drive it after boot. |
-| ERR | 24 | GPIO4 | Use `configs/ecan-e02-led-test.yaml` for polarity testing. |
+| ERR | 24 | GPIO4 | Use `dev/configs/ecan-e02-led-test.yaml` for polarity testing. |
 | CAN | 36 | GPIO23 | Conflicts with the common ESP32 RMII `MDC` default, so trace Ethernet management pins before enabling RTL8201. |
 
-The LED test firmware drives LINK, ERR, then CAN for 500 ms each. The LEDs appear to be active-low: with `status_led_inverted: "false"`, the earlier test made the selected LED blink off rather than on. `configs/ecan-e02-led-test.yaml` therefore uses `status_led_inverted: "true"` so each log label should match a visible LED-on pulse.
+The LED test firmware drives LINK, ERR, then CAN for 500 ms each. The LEDs appear to be active-low: with `status_led_inverted: "false"`, the earlier test made the selected LED blink off rather than on. `dev/configs/ecan-e02-led-test.yaml` therefore uses `status_led_inverted: "true"` so each log label should match a visible LED-on pulse.
 
 The main firmware in `configs/ecan-e02.yaml` uses the same active-low polarity. LINK follows Ethernet connect/disconnect, ERR is ESPHome's status LED, and CAN pulses on CAN RX or test TX activity.
 
@@ -50,15 +50,15 @@ On the TPT7721 SOP8 top-view pinout, this means the ESP32 side is using `pin 7 =
 
 Unpowered continuity checks confirm TPT7721 `pin 7 = IN1` connects only to ESP32 package pin 29 / `GPIO10`, with no continuity to other TPT7721 pins. The measured resistance from TPT7721 pin 7 to ESP-side ground is about 1.15 Mohm, and to ESP-side 3.3 V is about 1.20 Mohm. TPT7721 `pin 6 = OUT2` connects to ESP32 package pin 28 / `GPIO9` and is not shorted to adjacent pins. These measurements rule out a static low-ohm short on the ESP32-side TX/RX paths.
 
-The SIT65HVD233-style transceiver `LBK` pin is tied to ground, so hardware transceiver loopback is disabled. Without another CAN node, use `configs/ecan-e02-can-self-test.yaml` for an ESP32 TWAI no-ACK self-reception test. That verifies the ESP32 TWAI peripheral and GPIO routing, but it does not prove the CANH/CANL physical bus path.
+The SIT65HVD233-style transceiver `LBK` pin is tied to ground, so hardware transceiver loopback is disabled. Without another CAN node, use `dev/configs/ecan-e02-can-self-test.yaml` for an ESP32 TWAI no-ACK self-reception test. That verifies the ESP32 TWAI peripheral and GPIO routing, but it does not prove the CANH/CANL physical bus path.
 
-Current CAN self-test status: with the ECAN-E02 powered from its intended 12 V supply input and a 120 ohm resistor across CANH/CANL, `configs/ecan-e02-can-self-test.yaml` passes repeatedly on `GPIO10` TX and `GPIO9` RX at `500KBPS`. The self-test firmware logs `CAN self-test PASS` frames with `id=0x321`.
+Current CAN self-test status: with the ECAN-E02 powered from its intended 12 V supply input and a 120 ohm resistor across CANH/CANL, `dev/configs/ecan-e02-can-self-test.yaml` passes repeatedly on `GPIO10` TX and `GPIO9` RX at `500KBPS`. The self-test firmware logs `CAN self-test PASS` frames with `id=0x321`.
 
 Do not treat ESP32-side 3.3 V test-pad power as sufficient for CAN validation. The CAN/transceiver side is powered through the board power path, including the isolated DC/DC module and MIC5233 rail. If only the ESP32 side is powered, the CAN side may be unpowered and TWAI/CAN results can look like a broken RX return path.
 
-If the SIT `RS` pin is too difficult to probe directly, use `configs/ecan-e02-can-gpio-probe.yaml`. It pulses ESP32 `GPIO10` low briefly and samples ESP32 `GPIO9` without starting TWAI, so the controller cannot enter bus-off while the physical TX/RX path is checked. Current GPIO-probe status: after switching `GPIO10` to input/output mode, `GPIO10` readback is fixed and follows the commanded level (`tx_gpio=1` high, `tx_gpio=0` low). `GPIO9` still remains high during the low TX pulse, so the remaining issue is beyond ESP32 `GPIO10` output readback: check the TPT7721 output side, CAN transceiver enable/power, and RX return path.
+If the SIT `RS` pin is too difficult to probe directly, use `dev/configs/ecan-e02-can-gpio-probe.yaml`. It pulses ESP32 `GPIO10` low briefly and samples ESP32 `GPIO9` without starting TWAI, so the controller cannot enter bus-off while the physical TX/RX path is checked. Current GPIO-probe status: after switching `GPIO10` to input/output mode, `GPIO10` readback is fixed and follows the commanded level (`tx_gpio=1` high, `tx_gpio=0` low). `GPIO9` still remains high during the low TX pulse, so the remaining issue is beyond ESP32 `GPIO10` output readback: check the TPT7721 output side, CAN transceiver enable/power, and RX return path.
 
-For meter-based powered probing, flash `configs/ecan-e02-can-meter-probe.yaml`. It holds `GPIO10` high for 5 seconds, then low for 5 seconds. Measure each point relative to its local ground:
+For meter-based powered probing, flash `dev/configs/ecan-e02-can-meter-probe.yaml`. It holds `GPIO10` high for 5 seconds, then low for 5 seconds. Measure each point relative to its local ground:
 
 | Probe point | Local ground | Expected when `TXD HIGH` | Expected when `TXD LOW` |
 | --- | --- | --- | --- |
@@ -117,7 +117,7 @@ Trace these transceiver pins:
 | VCC/VIO | 3.3 V or 5 V rail | Determines whether the logic side is ESP32-safe. |
 | GND | board ground | Confirm common ground. |
 
-The ESP32 TWAI peripheral can route TX/RX through the GPIO matrix, so the TXD/RXD pins are not fixed. Once TXD/RXD are known, copy `configs/ecan-e02-can-listen.yaml.example`, set `can_tx_pin` and `can_rx_pin`, and start in `LISTENONLY` mode.
+The ESP32 TWAI peripheral can route TX/RX through the GPIO matrix, so the TXD/RXD pins are not fixed. Once TXD/RXD are known, copy `dev/configs/ecan-e02-can-listen.yaml.example`, set `can_tx_pin` and `can_rx_pin`, and start in `LISTENONLY` mode.
 
 Only switch `can_mode` to `NORMAL` after the bit rate and transceiver enable/standby pin are understood.
 
@@ -166,7 +166,7 @@ The REF_CLK path now matches the checked-in ESPHome Ethernet skeleton: RTL8201F 
 
 GPIO0 is also a boot strap pin. If the board uses GPIO0 as RMII REF_CLK input, the PHY clock circuit must not prevent normal boot mode.
 
-Use `configs/ecan-e02-ethernet-mdio-scan.yaml` to verify traced MDC/MDIO candidates before enabling full Ethernet. The scanner bit-bangs IEEE 802.3 Clause 22 management reads and logs PHY ID candidates across addresses 0 through 31. It does not enable the ESP32 Ethernet MAC or RMII data pins.
+Use `dev/configs/ecan-e02-ethernet-mdio-scan.yaml` to verify traced MDC/MDIO candidates before enabling full Ethernet. The scanner bit-bangs IEEE 802.3 Clause 22 management reads and logs PHY ID candidates across addresses 0 through 31. It does not enable the ESP32 Ethernet MAC or RMII data pins.
 
 The checked-in scan substitutions use the confirmed ECAN-E02 management pins:
 
@@ -195,7 +195,7 @@ If the package is RTL8201FL/FN 48-pin instead, use the datasheet pin table rathe
 
 ## Passive GPIO firmware probing
 
-After the bare firmware works, copy `configs/ecan-e02-gpio-probe.yaml.example` to a real YAML file and edit the `probe_pins` list. The `ecan_e02` component will configure those pins as inputs and log their levels in order.
+After the bare firmware works, copy `dev/configs/ecan-e02-gpio-probe.yaml.example` to a real YAML file and edit the `probe_pins` list. The `ecan_e02` component will configure those pins as inputs and log their levels in order.
 
 Do not probe:
 

@@ -4,7 +4,7 @@ Use a bare `VP230`/`SN65HVD230`-style 3.3 V CAN transceiver with a Waveshare ESP
 
 ## VP230 wiring
 
-Use `configs/can-peer-esp32-s3-zero-vp230.yaml` for the ESP32-S3-Zero.
+Use `dev/configs/can-peer-esp32-s3-zero-vp230.yaml` for the ESP32-S3-Zero.
 
 | VP230 pin | Signal | Connect to |
 | --- | --- | --- |
@@ -32,7 +32,7 @@ For a short bench bus with only the ECAN-E02 and this peer, use 120 ohm terminat
 Flash the peer:
 
 ```sh
-./scripts/esphome.sh upload configs/can-peer-esp32-s3-zero-vp230.yaml --device /dev/ttyACM0
+./scripts/esphome.sh upload dev/configs/can-peer-esp32-s3-zero-vp230.yaml --device /dev/ttyACM0
 ```
 
 The ESP32-S3-Zero has native USB. If it does not appear as a serial device, hold `BOOT` while plugging it into USB to enter download mode.
@@ -40,7 +40,7 @@ The ESP32-S3-Zero has native USB. If it does not appear as a serial device, hold
 Flash the ECAN-E02 normal transmit test:
 
 ```sh
-./scripts/esphome.sh upload configs/ecan-e02-can-normal-tx.yaml --device /dev/ttyACM0
+./scripts/esphome.sh upload dev/configs/ecan-e02-can-normal-tx.yaml --device /dev/ttyACM0
 ```
 
 The ECAN-E02 firmware sends `can_id=0x602` every 2 seconds. The ESP32-S3-Zero peer sends `can_id=0x711` every 5 seconds and logs any received frames.

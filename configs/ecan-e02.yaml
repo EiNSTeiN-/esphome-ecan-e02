@@ -22,17 +22,42 @@ substitutions:
   can_mode: LISTENONLY
   can_node_id: "0x02"
 
-packages:
-  bare: !include ecan-e02-bare.yaml
-
 esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
   comment: "ECAN-E02 ESP32-U4WD Ethernet/CAN firmware"
+  project:
+    name: local.ecan_e02
+    version: "0.1.0"
+  min_version: 2026.5.0
+  platformio_options:
+    board_build.flash_mode: dio
   build_path: build/ecan-e02-main
   on_boot:
     priority: 200
     then:
       - output.turn_off: link_led
       - output.turn_off: can_led
+
+esp32:
+  board: esp32dev
+  flash_size: 4MB
+  framework:
+    type: esp-idf
+
+external_components:
+  - source:
+      type: local
+      path: ../components
+    components: [ecan_e02]
+
+logger:
+  level: DEBUG
+  baud_rate: 115200
+
+ecan_e02:
+  id: board
+  update_interval: 30s
 
 ethernet:
   id: eth0
@@ -171,6 +196,9 @@ binary_sensor:
     disabled_by_default: true
 
 button:
+  - platform: restart
+    name: ${friendly_name} Restart
+    disabled_by_default: true
   - platform: template
     name: ${friendly_name} CAN Test Frame
     disabled_by_default: true
@@ -193,6 +221,9 @@ button:
                 format: "CAN test frame skipped because can_mode is ${can_mode}; set can_mode to NORMAL to transmit"
 
 sensor:
+  - platform: uptime
+    name: ${friendly_name} Uptime
+    disabled_by_default: true
   - platform: template
     name: ${friendly_name} CAN RX Frames
     disabled_by_default: true
@@ -219,6 +250,9 @@ sensor:
       disabled_by_default: true
 
 text_sensor:
+  - platform: version
+    name: ${friendly_name} ESPHome Version
+    disabled_by_default: true
   - platform: template
     id: can_last_frame
     name: ${friendly_name} CAN Last Frame

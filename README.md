@@ -1,168 +1,125 @@
-# ECAN-E02 ESPHome bring-up
+# ECAN-E02 ESPHome CAN-to-Ethernet firmware
 
-This workspace is set up for an ECAN-E02 board with:
+This repository contains ESPHome firmware for the inexpensive ECAN-E02 board, turning it into an Ethernet-connected CAN monitor for Home Assistant.
 
-- ESP32-U4WD flash target, treated as a classic ESP32/`esp32dev` in ESPHome
-- external CH343 USB-UART adapter for flashing/logging
-- RTL8201-compatible RMII Ethernet PHY with confirmed MDC/MDIO/reset and RMII data/control traces
-- onboard CAN transceiver traced through a TPT7721 isolator on `GPIO10` TX and `GPIO9` RX
+The target board uses an ESP32-U4WD, an RTL8201 Ethernet PHY, and an isolated CAN transceiver. The confirmed firmware pinout is already encoded in [configs/ecan-e02.yaml](configs/ecan-e02.yaml).
 
-The first step is intentionally small: flash a bare ESP32 ESPHome image over USB, verify serial logs, then move to the main Ethernet/CAN firmware once serial recovery works.
+## Current Status
 
-## Quick start
+- ESP32 flashing over USB serial is working.
+- CAN is confirmed on `GPIO10` TX and `GPIO9` RX.
+- CAN self-test passes when the board is powered from its normal 12 V input.
+- RTL8201 management and RMII pins are traced and configured with `phy_addr: 0`.
+- The main firmware compiles, flashes, and boots cleanly.
+- Ethernet link and DHCP still need final validation with the RJ45 port connected to a live network.
 
-Check what USB serial device is visible:
+The default firmware is conservative: CAN starts in `LISTENONLY` mode, so it can monitor a live CAN bus without acknowledging or transmitting frames.
+
+## What You Need
+
+- ECAN-E02 board.
+- 12 V power supply connected to the board power input. USB-only power may not power the isolated CAN side.
+- USB-to-serial adapter for flashing. A CH343/CH34x adapter works.
+- Ethernet cable connected to a network with DHCP.
+- CANH/CANL connected to the bus you want to monitor.
+- A Linux machine with `git`, `make`, and `uv`/`uvx` available.
+
+For Linux USB serial support, the in-kernel `ch341` driver is usually enough for WCH CH34x adapters. Some CH343 adapters work better with WCH's vendor driver; this repo includes `scripts/ch343-driver.sh` for building/loading that driver when needed.
+
+## Quick Start
+
+Clone the repository and check that ESPHome can read the main config:
+
+```sh
+make config
+```
+
+Compile the firmware:
+
+```sh
+make compile
+```
+
+Find the USB serial port:
 
 ```sh
 ./scripts/usb-check.sh
+./scripts/serial-port.sh
 ```
 
-To watch a replug event:
+Flash the board. Replace the port with the one shown on your system:
 
 ```sh
-./scripts/watch-usb.sh 60
+make flash PORT=/dev/ttyACM0
 ```
 
-Check the config:
+You can also use the script directly:
 
 ```sh
-./scripts/esphome.sh config configs/ecan-e02-bare.yaml
+./scripts/flash.sh /dev/ttyACM0
 ```
 
-Compile:
+Read serial logs after flashing:
 
 ```sh
-./scripts/esphome.sh compile configs/ecan-e02-bare.yaml
+make logs PORT=/dev/ttyACM0
 ```
 
-Flash over the detected serial interface:
+Successful boot logs should show the ESP32 starting, CAN configured in listen-only mode, and Ethernet starting with RTL8201 `phy_addr: 0`.
 
-```sh
-./scripts/flash-bare.sh
+## Home Assistant
+
+After Ethernet obtains an IP address, Home Assistant should be able to discover the node through ESPHome/mDNS as `ecan-e02.local`.
+
+The firmware exposes:
+
+- Device status and restart control.
+- Ethernet IP and MAC diagnostics.
+- CAN RX frame count.
+- Last received CAN frame.
+- Optional CAN RX logging switch.
+- LINK, ERR, and CAN status LED entities.
+- Heap, loop-time, reset-reason, and device-info diagnostics.
+
+Many diagnostic entities are disabled by default in Home Assistant to keep the device quiet. Enable them from the ESPHome device page when you need them.
+
+The current config leaves API encryption and OTA passwords unset for bench bring-up. Add ESPHome API encryption and OTA credentials before putting the device on an untrusted network.
+
+## Configuration
+
+Most normal changes are substitutions at the top of [configs/ecan-e02.yaml](configs/ecan-e02.yaml):
+
+```yaml
+substitutions:
+  name: ecan-e02
+  friendly_name: ECAN E02
+  can_bit_rate: 500KBPS
+  can_mode: LISTENONLY
 ```
 
-If the port auto-detect does not find the adapter, pass it explicitly. Use `/dev/ttyUSB0` for the external WCH CH34x/CH343 UART path, `/dev/ttyACM0` for an Espressif native USB CDC/JTAG path, or `/dev/ttyCH343USB0` when using WCH's vendor CH343 driver:
+Use `LISTENONLY` for passive monitoring. Use `NORMAL` only when you want the board to acknowledge frames or transmit on the CAN bus. The included "CAN Test Frame" button only sends when `can_mode` is `NORMAL`.
 
-```sh
-./scripts/flash-bare.sh /dev/ttyUSB0
-./scripts/flash-bare.sh /dev/ttyACM0
-./scripts/flash-bare.sh /dev/ttyCH343USB0
-```
+Common CAN bit rates include `125KBPS`, `250KBPS`, `500KBPS`, and `1000KBPS`. Match the existing bus.
 
-Read serial logs:
+Do not short CANH to CANL for testing. Use a correctly terminated CAN bus; many small bench setups need a 120 ohm resistor across CANH/CANL at the end of the bus.
 
-```sh
-./scripts/logs.sh
-```
+## Status LEDs
 
-If `DTR` and `RTS` are wired directly from the USB-UART adapter to `GPIO0/BOOT` and `EN/CHIP_PU`, use the reset-log helper instead. It opens the port with both control lines inactive, pulses reset, and captures boot logs:
-
-```sh
-./scripts/serial-reset-log.sh /dev/ttyACM0
-```
-
-The bare firmware enables only serial logging and the local `ecan_e02` component. It does not need WiFi secrets and is the safest target while the board pinout is unknown.
-
-## Main firmware
-
-`configs/ecan-e02.yaml` is the main ECAN-E02 firmware. It enables the confirmed RTL8201 Ethernet path, ESP32 TWAI/CAN in listen-only mode by default, active-low status LEDs, API, OTA, the web server, and disabled-by-default diagnostic entities.
-
-Build and flash it intentionally after the bare firmware is recoverable over serial:
-
-```sh
-make config-board
-make compile-board
-make flash-board PORT=/dev/ttyACM0
-make logs-board PORT=/dev/ttyACM0
-```
-
-The default CAN mode is `LISTENONLY`, so the node will receive CAN traffic without acknowledging or transmitting. Change the `can_mode` substitution in `configs/ecan-e02.yaml` to `NORMAL` only when you want the board to participate on the bus.
-
-Status LED behavior in the main firmware:
+The board LEDs are active-low and are configured as:
 
 | LED label | Firmware behavior |
 | --- | --- |
 | LINK | On while ESPHome reports Ethernet connected. |
 | ERR | ESPHome status LED; blinks for warnings/errors. |
-| CAN | Pulses on CAN RX and test TX attempts. |
+| CAN | Pulses on CAN RX and CAN test TX attempts. |
 
-## Useful files
+## Repository Layout
 
-- `configs/ecan-e02-bare.yaml`: first flash target
-- `configs/ecan-e02.yaml`: main Ethernet/CAN firmware with status LEDs, API, OTA, web server, and diagnostics
-- `configs/ecan-e02-wifi.yaml.example`: optional WiFi/API/OTA layer once serial flashing works
-- `configs/ecan-e02-gpio-probe.yaml.example`: passive GPIO input sampler for suspected pins
-- `configs/ecan-e02-led-test.yaml`: status LED sequencer for traced LINK, ERR, and CAN LEDs
-- `configs/ecan-e02-can-listen.yaml`: traced CAN listen-only config, `GPIO10` TX and `GPIO9` RX through the TPT7721 isolator
-- `configs/ecan-e02-can-normal-tx.yaml`: normal-mode periodic CAN transmitter for testing against an external peer
-- `configs/ecan-e02-can-self-test.yaml`: no-peer ESP32 TWAI self-reception test for the traced CAN pins
-- `configs/ecan-e02-can-gpio-probe.yaml`: short-pulse GPIO-level CAN TX/RX path probe that does not use TWAI
-- `configs/ecan-e02-can-meter-probe.yaml`: meter-friendly CAN TX/RX path probe with 5 second high/low windows
-- `configs/can-peer-esp32-s3-zero-vp230.yaml`: ESP32-S3-Zero plus VP230 external CAN peer
-- `configs/ecan-e02-ethernet-mdio-scan.yaml`: bit-banged MDC/MDIO scanner for traced RTL8201 management pins
-- `configs/ecan-e02-can-listen.yaml.example`: ESP32 TWAI/CAN listen-only skeleton
-- `configs/ecan-e02-ethernet-rtl8201.yaml.example`: RTL8201 RMII skeleton with confirmed MDC/MDIO, reset, REF_CLK, and fixed RMII data/control pins
-- `scripts/ch343-driver.sh`: fetch/build/load the WCH CH343-family vendor driver
-- `scripts/serial-reset-log.sh`: serial log capture for direct DTR/RTS reset wiring
-- `docs/pin-tracing.md`: physical tracing checklist
-- `docs/external-can-peer.md`: VP230 and ESP32-S3-Zero wiring/test notes
-- `docs/usb-serial.md`: CH343, `cdc_acm`, `ch341`, and Espressif native USB notes
+- [configs/ecan-e02.yaml](configs/ecan-e02.yaml): main firmware for normal use.
+- [components/ecan_e02/](components/ecan_e02/): local ESPHome helper component with board diagnostics.
+- [scripts/](scripts/): user-facing build, flash, log, USB, and driver helpers.
+- [dev/](dev/): hardware bring-up notes, debug firmware, probing configs, and development-only scripts.
 
-## Expected next steps
+## Development Notes
 
-1. Flash `configs/ecan-e02-bare.yaml` and confirm serial logs show the `ecan_e02` component.
-2. Use `configs/ecan-e02-can-self-test.yaml` with the board powered from its intended 12 V input to verify the internal CAN path.
-3. Use `configs/ecan-e02-can-normal-tx.yaml` and the ESP32-S3-Zero VP230 peer to verify CANH/CANL with an external node.
-4. Flash `configs/ecan-e02.yaml` and verify Ethernet startup logs over serial.
-5. Trace RTL8201 PHY address straps on pins 24 and 25 only if the address 0/1 alias needs to be explained; `phy_addr: 0` is the working assumption for ESPHome.
-
-For the ESP32-U4WD target, GPIO16/GPIO17 are connected to the in-package flash. Do not use them for RTL8201 MDC/MDIO, RMII clock output, reset, power-enable, or passive GPIO probing.
-
-## Verification
-
-The following were validated with ESPHome 2026.5.x, most recently 2026.5.3:
-
-- `configs/ecan-e02-bare.yaml`: config and compile
-- `configs/ecan-e02.yaml`: config, compile, flash, and stable boot logs; CAN initializes in `LISTENONLY` mode, and Ethernet starts with RTL8201 `phy_addr: 0`
-- `configs/ecan-e02-led-test.yaml`: config and compile
-- `configs/ecan-e02-can-listen.yaml`: config
-- `configs/ecan-e02-can-self-test.yaml`: config, compile, flash, and repeated `CAN self-test PASS` logs when the board is powered from its intended 12 V input
-- `configs/ecan-e02-can-listen.yaml.example`: config and compile
-- `configs/ecan-e02-ethernet-rtl8201.yaml.example`: config and compile
-- `configs/ecan-e02-gpio-probe.yaml.example`: config
-- `configs/ecan-e02-ethernet-mdio-scan.yaml`: config, compile, flash, and PHY ID logs on confirmed `GPIO18` MDC, `GPIO5` MDIO, and `GPIO14` reset; the PHY responds at addresses 0 and 1 with `phy_id=0x001C:0xC816`
-- bare firmware flash and boot logs on the ESP32-U4WD target over CH343 CDC ACM; esptool reports this target as `ESP32-U4WDH`
-
-The bare serial-only config remains the safest first flash target. Compile the specific config you intend to upload before flashing. Ethernet link and DHCP still need to be verified with the RJ45 port connected to a live network.
-
-## ESPHome notes
-
-This project uses ESPHome through `uvx`:
-
-```sh
-env UV_CACHE_DIR=/tmp/uv-cache UV_TOOL_DIR=/tmp/uv-tools uvx --from esphome esphome version
-```
-
-The helper scripts set those environment variables automatically.
-
-## Git in this workspace
-
-This environment has a read-only `.git` placeholder directory, so this checkout uses `.git-local` as the real Git directory. Use the wrapper for local Git commands:
-
-```sh
-./scripts/git.sh status
-./scripts/git.sh log --oneline
-```
-
-The ESP32 classic RMII data pins are fixed in ESPHome/ESP-IDF:
-
-| ESP32 GPIO | RMII signal |
-| --- | --- |
-| GPIO19 | TXD0 |
-| GPIO21 | TX_EN |
-| GPIO22 | TXD1 |
-| GPIO25 | RXD0 |
-| GPIO26 | RXD1 |
-| GPIO27 | CRS_DV |
-
-The remaining Ethernet trace targets are the PHY address straps on RTL8201F pins 24 and 25, mainly to explain why MDIO responds at both addresses 0 and 1. The clock path is confirmed as RTL8201F `TXC/REF_CLK` output into ESP32 `GPIO0` using `CLK_EXT_IN`.
+The ECAN-E02 pinout and bring-up history live in [dev/README.md](dev/README.md). Those files are useful if you are tracing a board variant, debugging the USB adapter, checking CAN electrically, or validating the RTL8201 PHY. Normal users should start with [configs/ecan-e02.yaml](configs/ecan-e02.yaml).

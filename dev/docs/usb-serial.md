@@ -76,7 +76,7 @@ For bench bring-up on an unknown board, add about 1k series resistance on each c
 Direct wiring can confuse generic serial terminals because some of them assert `DTR` or `RTS` when opening the port. If logs are needed with direct wiring, use this project's reset-log helper:
 
 ```sh
-./scripts/serial-reset-log.sh /dev/ttyACM0
+./dev/scripts/serial-reset-log.sh /dev/ttyACM0
 ```
 
 ## Flashing
@@ -84,27 +84,27 @@ Direct wiring can confuse generic serial terminals because some of them assert `
 Auto-detect the serial port and flash the bare bring-up firmware:
 
 ```sh
-./scripts/flash-bare.sh
+./dev/scripts/flash-bare.sh
 ```
 
 If auto-detection picks the wrong device or cannot see the host serial device, pass the port explicitly:
 
 ```sh
-./scripts/flash-bare.sh /dev/ttyUSB0
-./scripts/flash-bare.sh /dev/ttyACM0
-./scripts/flash-bare.sh /dev/ttyCH343USB0
+./dev/scripts/flash-bare.sh /dev/ttyUSB0
+./dev/scripts/flash-bare.sh /dev/ttyACM0
+./dev/scripts/flash-bare.sh /dev/ttyCH343USB0
 ```
 
 Read logs the same way:
 
 ```sh
-./scripts/logs.sh /dev/ttyUSB0
+./scripts/logs.sh /dev/ttyUSB0 dev/configs/ecan-e02-bare.yaml
 ```
 
 For direct `DTR`/`RTS` wiring, prefer:
 
 ```sh
-./scripts/serial-reset-log.sh /dev/ttyUSB0
+./dev/scripts/serial-reset-log.sh /dev/ttyUSB0
 ```
 
 ## Capturing Attach Events
@@ -112,7 +112,7 @@ For direct `DTR`/`RTS` wiring, prefer:
 When changing cable, port, adapter, or driver, capture the kernel and udev attach event:
 
 ```sh
-./scripts/watch-usb.sh 60
+./dev/scripts/watch-usb.sh 60
 ```
 
 Replug the external CH343 adapter while the watcher is running. The useful output is the USB ID, bound driver, and created tty name.

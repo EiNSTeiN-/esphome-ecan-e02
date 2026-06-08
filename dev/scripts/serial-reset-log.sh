@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 port="${1:-$("$repo_dir/scripts/serial-port.sh")}"
 seconds="${2:-30}"
 baud="${BAUD:-115200}"

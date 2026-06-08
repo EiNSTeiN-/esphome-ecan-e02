@@ -31,5 +31,5 @@ for path in /dev/ttyUSB* /dev/ttyACM* /dev/ttyCH343USB* /dev/ttyCH*; do
   fi
 done
 
-echo "No USB serial port found. Pass a port explicitly, for example: ./scripts/flash-bare.sh /dev/ttyUSB0, /dev/ttyACM0, or /dev/ttyCH343USB0" >&2
+echo "No USB serial port found. Pass a port explicitly, for example: ./scripts/flash.sh /dev/ttyUSB0, /dev/ttyACM0, or /dev/ttyCH343USB0" >&2
 exit 1
