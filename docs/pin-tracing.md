@@ -68,6 +68,7 @@ Other observed power devices:
 
 | Marking | Likely role | Notes |
 | --- | --- | --- |
+| `B0505S-1WR3` | 1 W isolated 5 V to 5 V DC/DC module | Likely generates the isolated CAN-side 5 V rail. Its output should feed the CAN-side regulator/power path, including the MIC5233 input rail. |
 | `RDA2L 5T4V.1` | Likely RY8310-class SOT23-6 buck regulator if near an inductor and feedback resistors | Candidate only until the package pins are traced. RY8310 devices include an `EN` pin and generate an adjustable local rail from a higher input. |
 | `AMS1117-3.3` | Fixed 3.3 V linear regulator | No enable pin. In SOT-223, pin 1 is ground, pin 2/tab is output, and pin 3 is input. It is on whenever its input rail is present. |
 
