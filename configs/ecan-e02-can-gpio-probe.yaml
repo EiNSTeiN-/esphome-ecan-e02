@@ -11,7 +11,7 @@ esphome:
     priority: 800
     then:
       - lambda: |-
-          gpio_set_direction(GPIO_NUM_10, GPIO_MODE_OUTPUT);
+          gpio_set_direction(GPIO_NUM_10, GPIO_MODE_INPUT_OUTPUT);
           gpio_set_level(GPIO_NUM_10, 1);
 
 binary_sensor:
