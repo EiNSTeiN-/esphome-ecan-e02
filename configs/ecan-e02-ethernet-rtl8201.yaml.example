@@ -1,16 +1,31 @@
+substitutions:
+  name: ecan-e02-ethernet
+  friendly_name: ECAN E02 Ethernet
+
 packages:
   bare: !include ecan-e02-bare.yaml
 
-# This is the common ESP32 RMII layout, not the confirmed ECAN-E02 layout.
-# GPIO23 is traced to the CAN status LED, so replace MDC, MDIO, REF_CLK,
-# phy_addr, and any power/reset pin with confirmed traces before flashing.
-# GPIO16/GPIO17 are ESP32-U4WD in-package flash pins and are not available
-# for RMII clock output on this board.
+esphome:
+  build_path: build/ecan-e02-ethernet-rtl8201
+
+# ECAN-E02 confirmed so far:
+# - RTL8201 MDC -> GPIO18
+# - RTL8201 MDIO -> GPIO5
+# - RTL8201 PHYRSTB -> GPIO14, active-low reset
+# - Fixed RMII data/control pins match the classic ESP32 EMAC mapping
+#
+# Do not flash this Ethernet config until RTL8201 TXC/REF_CLK has been traced.
+# The GPIO0 CLK_EXT_IN entry below is the likely ESP32 layout, not yet confirmed.
+# GPIO16/GPIO17 are ESP32-U4WD in-package flash pins and are not available for
+# RMII clock output on this board.
 ethernet:
   type: RTL8201
-  mdc_pin: GPIO23
-  mdio_pin: GPIO18
+  mdc_pin: GPIO18
+  mdio_pin: GPIO5
   phy_addr: 0
+  # GPIO14 is traced to PHYRSTB. Leave this commented until the full Ethernet
+  # bring-up verifies reset handling with ESPHome's Ethernet driver.
+  # power_pin: GPIO14
   clk:
     mode: CLK_EXT_IN
     pin: GPIO0

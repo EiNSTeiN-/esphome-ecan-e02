@@ -1,8 +1,9 @@
 substitutions:
-  # Replace these with traced RTL8201 MDC/MDIO pins before flashing.
-  # GPIO16/GPIO17 are connected to the ESP32-U4WD in-package flash.
-  mdc_pin: GPIO32
-  mdio_pin: GPIO33
+  name: ecan-e02-mdio-scan
+  friendly_name: ECAN E02 MDIO Scan
+  mdc_pin: GPIO18
+  mdio_pin: GPIO5
+  reset_pin: GPIO14
   phy_addr_start: "0"
   phy_addr_end: "31"
   phy_addr_batch_size: "1"
@@ -22,3 +23,7 @@ ecan_e02:
     phy_addr_start: ${phy_addr_start}
     phy_addr_end: ${phy_addr_end}
     phy_addr_batch_size: ${phy_addr_batch_size}
+    reset_pin: ${reset_pin}
+    reset_active_low: true
+    reset_hold_ms: 10
+    reset_settle_ms: 100

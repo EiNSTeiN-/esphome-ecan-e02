@@ -132,30 +132,47 @@ Classic ESP32 RMII has fixed data pins:
 | GPIO26 | RXD1 |
 | GPIO27 | CRS_DV |
 
-On a typical RTL8201 design, these are the variable or board-specific signals to confirm:
+Observed ECAN-E02 RTL8201 traces:
 
-| Signal | Common ESP32 GPIO | Why it matters |
-| --- | --- | --- |
-| MDC | Trace required | ESPHome requires `mdc_pin`; GPIO23 is already traced to the CAN LED, and GPIO16/GPIO17 are not usable on this U4WD target. |
-| MDIO | Trace required; GPIO18 is common but unconfirmed | ESPHome requires `mdio_pin`. |
-| REF_CLK | Prefer tracing for GPIO0 input or an external clock circuit | ESPHome requires `clk.mode` and `clk.pin`; GPIO16/GPIO17 clock-output modes are unavailable because they are ESP32-U4WD in-package flash pins. |
-| PHYAD straps | address 0 or 1 are common | ESPHome requires `phy_addr`. |
-| RESET or POWER_EN | trace required or tied high | ESPHome may need `power_pin`; do not assume GPIO16/GPIO17. |
+| RTL8201 signal | RTL8201 pin | ESP32 package pin | ESP32 GPIO | Status |
+| --- | --- | --- | --- | --- |
+| PHYRSTB | 21 | 17 | GPIO14 | Confirmed. Active-low reset; MDIO scanner pulses this before reading. |
+| MDC | 22 | 35 | GPIO18 | Confirmed. |
+| MDIO | 23 | 34 | GPIO5 | Confirmed. GPIO5 is a boot strap pin; the board boots normally with this trace. |
+| TXEN | 20 | 42 | GPIO21 | Confirmed fixed RMII signal. |
+| RXD0 | - | 14 | GPIO25 | Confirmed fixed RMII signal. |
+| RXD1 | - | 15 | GPIO26 | Confirmed fixed RMII signal. |
+| TXD0 | - | 38 | GPIO19 | Confirmed fixed RMII signal. |
+| TXD1 | - | 39 | GPIO22 | Confirmed fixed RMII signal. |
+| CRS_DV | 26 | 16 | GPIO27 | Confirmed fixed RMII signal. |
+| TXC / REF_CLK | 15 | Trace next | Trace next | Required before enabling Ethernet. |
+| RXD3 / CLK_CTL | 12 | Trace next | Trace next | Clock-mode strap; helps determine whether REF_CLK is input or output. |
 
-Start with the example in `configs/ecan-e02-ethernet-rtl8201.yaml.example` only after replacing MDC, MDIO, REF_CLK, and PHY address with confirmed traces.
+The MDIO scanner confirms a live RTL8201-compatible PHY on the traced management pins:
+
+```text
+MDC GPIO18, MDIO GPIO5, reset GPIO14
+MDIO PHY addr=0 bmcr=0x1000 bmsr=0x7849 phy_id=0x001C:0xC816
+MDIO PHY addr=1 bmcr=0x1000 bmsr=0x7849 phy_id=0x001C:0xC816
+```
+
+Use `phy_addr: 0` for the first ESPHome Ethernet attempt. Address 1 currently reads as the same PHY as address 0, so treat it as an alias or strap behavior until the PHY address pins are traced.
+
+Start with the example in `configs/ecan-e02-ethernet-rtl8201.yaml.example` only after confirming the REF_CLK path. MDC, MDIO, reset, and the fixed RMII data/control pins are now traced; the remaining bring-up blocker is the clock path.
 
 GPIO0 is also a boot strap pin. If the board uses GPIO0 as RMII REF_CLK input, the PHY clock circuit must not prevent normal boot mode.
 
-Use `configs/ecan-e02-ethernet-mdio-scan.yaml` to verify traced MDC/MDIO candidates before enabling full Ethernet. The scanner bit-bangs IEEE 802.3 Clause 22 management reads and logs any plausible PHY ID found across addresses 0 through 31. It does not enable the ESP32 Ethernet MAC or RMII data pins.
+Use `configs/ecan-e02-ethernet-mdio-scan.yaml` to verify traced MDC/MDIO candidates before enabling full Ethernet. The scanner bit-bangs IEEE 802.3 Clause 22 management reads and logs PHY ID candidates across addresses 0 through 31. It does not enable the ESP32 Ethernet MAC or RMII data pins.
 
-The checked-in scan substitutions are compile-time placeholders only:
+The checked-in scan substitutions use the confirmed ECAN-E02 management pins:
 
 ```yaml
-mdc_pin: GPIO32
-mdio_pin: GPIO33
+mdc_pin: GPIO18
+mdio_pin: GPIO5
+reset_pin: GPIO14
 ```
 
-Change those substitutions to traced pins before flashing. The scanner rejects GPIO6-GPIO11, GPIO16/GPIO17, and the confirmed CAN pins GPIO9/GPIO10. If the scan is correct and the PHY is powered/out of reset, logs should contain a line like:
+The scanner rejects GPIO6-GPIO11 and GPIO16/GPIO17. If the scan is correct and the PHY is powered/out of reset, logs should contain a line like:
 
 ```text
 MDIO PHY addr=0 bmcr=0x.... bmsr=0x.... phy_id=0x....:0x....
@@ -163,19 +180,13 @@ MDIO PHY addr=0 bmcr=0x.... bmsr=0x.... phy_id=0x....:0x....
 
 If it logs `MDIO scan found no plausible PHY`, recheck PHY power/reset, MDC/MDIO continuity, and PHY address straps.
 
-For an RTL8201F QFN-32, useful physical trace points are:
+For an RTL8201F QFN-32, useful remaining physical trace points are:
 
 | RTL8201F pin | Signal | Trace target |
 | --- | --- | --- |
-| 22 | MDC | ESP32 management clock GPIO. |
-| 23 | MDIO | ESP32 management data GPIO; should have a pull-up. |
 | 15 | TXC / REF_CLK | ESP32 `GPIO0` for `CLK_EXT_IN`, or an external/PHY clock circuit. GPIO16/GPIO17 are not available on this ESP32-U4WD board. |
 | 12 | RXD3 / CLK_CTL | Strap: high means REF_CLK input mode; low means REF_CLK output mode. |
-| 21 | PHYRSTB | Reset or power-control circuit; must be high after boot. |
-| 9, 10 | RXD0, RXD1 | ESP32 `GPIO25`, `GPIO26`. |
-| 16, 17 | TXD0, TXD1 | ESP32 `GPIO19`, `GPIO22`. |
-| 20 | TXEN | ESP32 `GPIO21`. |
-| 26 | CRS_DV | ESP32 `GPIO27`. |
+| PHYAD strap pins | PHY address | Confirm why addresses 0 and 1 both respond. |
 
 If the package is RTL8201FL/FN 48-pin instead, use the datasheet pin table rather than the QFN-32 pin numbers above.
 

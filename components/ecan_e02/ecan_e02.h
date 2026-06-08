@@ -32,6 +32,13 @@ class EcanE02Component : public PollingComponent {
     this->mdio_scan_phy_addr_end_ = phy_addr_end;
     this->mdio_scan_phy_addr_batch_size_ = phy_addr_batch_size;
   }
+  void set_mdio_scan_reset(uint8_t reset_pin, bool active_low, uint32_t hold_ms, uint32_t settle_ms) {
+    this->mdio_scan_reset_enabled_ = true;
+    this->mdio_scan_reset_pin_ = reset_pin;
+    this->mdio_scan_reset_active_low_ = active_low;
+    this->mdio_scan_reset_hold_ms_ = hold_ms;
+    this->mdio_scan_reset_settle_ms_ = settle_ms;
+  }
 
  protected:
   std::vector<GPIOPin *> probe_pins_{};
@@ -51,6 +58,11 @@ class EcanE02Component : public PollingComponent {
   uint8_t mdio_scan_next_phy_addr_{0};
   uint8_t mdio_scan_hits_this_cycle_{0};
   uint8_t mdio_scan_valid_ta_this_cycle_{0};
+  bool mdio_scan_reset_enabled_{false};
+  bool mdio_scan_reset_active_low_{true};
+  uint8_t mdio_scan_reset_pin_{0};
+  uint32_t mdio_scan_reset_hold_ms_{10};
+  uint32_t mdio_scan_reset_settle_ms_{100};
 
   bool setup_can_self_test_();
   void run_can_self_test_();

@@ -1,6 +1,7 @@
 #include "ecan_e02.h"
 
 #include "esphome/core/application.h"
+#include "esphome/core/hal.h"
 #include "esphome/core/log.h"
 
 #include <cinttypes>
@@ -85,13 +86,26 @@ static uint16_t mdio_read_register_(gpio_num_t mdc, gpio_num_t mdio, uint8_t phy
   mdio_write_bits_(mdc, mdio, phy_addr, 5);
   mdio_write_bits_(mdc, mdio, reg_addr, 5);
 
-  (void) mdio_read_bit_(mdc, mdio);            // First turnaround bit is high impedance.
-  bool ta_zero = !mdio_read_bit_(mdc, mdio);   // PHY should drive the second turnaround bit low.
-  *valid_turnaround = ta_zero;
-
   uint16_t value = 0;
-  for (uint8_t i = 0; i < 16; i++) {
-    value = static_cast<uint16_t>((value << 1) | (mdio_read_bit_(mdc, mdio) ? 1 : 0));
+  bool ta_first = mdio_read_bit_(mdc, mdio);   // Usually high impedance and read high.
+  bool ta_second = mdio_read_bit_(mdc, mdio);  // PHY should drive this turnaround bit low.
+  if (!ta_first) {
+    // Some observed RTL8201 reads drive the turnaround zero one clock earlier.
+    *valid_turnaround = true;
+    value = ta_second ? 1 : 0;
+    for (uint8_t i = 1; i < 16; i++) {
+      value = static_cast<uint16_t>((value << 1) | (mdio_read_bit_(mdc, mdio) ? 1 : 0));
+    }
+  } else if (!ta_second) {
+    *valid_turnaround = true;
+    for (uint8_t i = 0; i < 16; i++) {
+      value = static_cast<uint16_t>((value << 1) | (mdio_read_bit_(mdc, mdio) ? 1 : 0));
+    }
+  } else {
+    *valid_turnaround = false;
+    for (uint8_t i = 0; i < 16; i++) {
+      value = static_cast<uint16_t>((value << 1) | (mdio_read_bit_(mdc, mdio) ? 1 : 0));
+    }
   }
 
   mdio_release_(mdio);
@@ -225,6 +239,11 @@ void EcanE02Component::dump_config() {
                   this->mdio_scan_mdc_pin_, this->mdio_scan_mdio_pin_, this->mdio_scan_phy_addr_start_,
                   this->mdio_scan_phy_addr_end_, this->mdio_scan_phy_addr_batch_size_,
                   TRUEFALSE(this->mdio_scan_ready_));
+    if (this->mdio_scan_reset_enabled_) {
+      ESP_LOGCONFIG(TAG, "  MDIO scan reset: GPIO%u active_low=%s hold=%" PRIu32 "ms settle=%" PRIu32 "ms",
+                    this->mdio_scan_reset_pin_, TRUEFALSE(this->mdio_scan_reset_active_low_),
+                    this->mdio_scan_reset_hold_ms_, this->mdio_scan_reset_settle_ms_);
+    }
   }
 }
 
@@ -357,6 +376,21 @@ bool EcanE02Component::setup_mdio_scan_() {
   gpio_set_level(mdc, 0);
   gpio_set_drive_capability(mdc, GPIO_DRIVE_CAP_0);
   mdio_release_(mdio);
+
+  if (this->mdio_scan_reset_enabled_) {
+    gpio_num_t reset = static_cast<gpio_num_t>(this->mdio_scan_reset_pin_);
+    int asserted = this->mdio_scan_reset_active_low_ ? 0 : 1;
+    int deasserted = this->mdio_scan_reset_active_low_ ? 1 : 0;
+    gpio_set_direction(reset, GPIO_MODE_OUTPUT);
+    gpio_set_drive_capability(reset, GPIO_DRIVE_CAP_0);
+    gpio_set_level(reset, asserted);
+    delay(this->mdio_scan_reset_hold_ms_);
+    gpio_set_level(reset, deasserted);
+    delay(this->mdio_scan_reset_settle_ms_);
+    App.feed_wdt();
+    ESP_LOGI(TAG, "MDIO scan reset released on GPIO%u", this->mdio_scan_reset_pin_);
+  }
+
   this->mdio_scan_next_phy_addr_ = this->mdio_scan_phy_addr_start_;
   this->mdio_scan_hits_this_cycle_ = 0;
   this->mdio_scan_valid_ta_this_cycle_ = 0;
@@ -380,18 +414,22 @@ void EcanE02Component::run_mdio_scan_() {
     uint16_t phy_id2 = mdio_read_register_(mdc, mdio, phy_addr, 3, &valid_id2);
     if (valid_id1 || valid_id2) {
       this->mdio_scan_valid_ta_this_cycle_++;
-    }
-
-    if (valid_id1 && valid_id2 && mdio_register_value_plausible_(phy_id1) &&
-        mdio_register_value_plausible_(phy_id2)) {
       bool valid_bmcr = false;
       bool valid_bmsr = false;
       uint16_t bmcr = mdio_read_register_(mdc, mdio, phy_addr, 0, &valid_bmcr);
       uint16_t bmsr = mdio_read_register_(mdc, mdio, phy_addr, 1, &valid_bmsr);
-      this->mdio_scan_hits_this_cycle_++;
 
-      ESP_LOGI(TAG, "MDIO PHY addr=%u bmcr=0x%04X%s bmsr=0x%04X%s phy_id=0x%04X:0x%04X", phy_addr, bmcr,
-               valid_bmcr ? "" : "?", bmsr, valid_bmsr ? "" : "?", phy_id1, phy_id2);
+      if (valid_id1 && valid_id2 && mdio_register_value_plausible_(phy_id1) &&
+          mdio_register_value_plausible_(phy_id2)) {
+        this->mdio_scan_hits_this_cycle_++;
+        ESP_LOGI(TAG, "MDIO PHY addr=%u bmcr=0x%04X%s bmsr=0x%04X%s phy_id=0x%04X:0x%04X", phy_addr, bmcr,
+                 valid_bmcr ? "" : "?", bmsr, valid_bmsr ? "" : "?", phy_id1, phy_id2);
+      } else {
+        ESP_LOGW(TAG,
+                 "MDIO turnaround addr=%u bmcr=0x%04X%s bmsr=0x%04X%s phy_id=0x%04X%s:0x%04X%s",
+                 phy_addr, bmcr, valid_bmcr ? "" : "?", bmsr, valid_bmsr ? "" : "?", phy_id1,
+                 valid_id1 ? "" : "?", phy_id2, valid_id2 ? "" : "?");
+      }
     }
 
     if (phy_addr >= this->mdio_scan_phy_addr_end_) {

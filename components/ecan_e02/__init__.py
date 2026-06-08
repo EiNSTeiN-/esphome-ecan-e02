@@ -4,7 +4,7 @@ from esphome import pins
 import esphome.codegen as cg
 from esphome.components.esp32 import include_builtin_idf_component
 import esphome.config_validation as cv
-from esphome.const import CONF_ID, CONF_RX_PIN, CONF_TX_PIN
+from esphome.const import CONF_ID, CONF_RESET_PIN, CONF_RX_PIN, CONF_TX_PIN
 from esphome.cpp_helpers import gpio_pin_expression
 
 CODEOWNERS = []
@@ -18,6 +18,9 @@ CONF_PHY_ADDR_BATCH_SIZE = "phy_addr_batch_size"
 CONF_PHY_ADDR_END = "phy_addr_end"
 CONF_PHY_ADDR_START = "phy_addr_start"
 CONF_PROBE_PINS = "probe_pins"
+CONF_RESET_ACTIVE_LOW = "reset_active_low"
+CONF_RESET_HOLD_MS = "reset_hold_ms"
+CONF_RESET_SETTLE_MS = "reset_settle_ms"
 
 CAN_SELF_TEST_BIT_RATES = {
     "25KBPS": 25,
@@ -82,6 +85,14 @@ CONFIG_SCHEMA = cv.Schema(
                 cv.Optional(CONF_PHY_ADDR_BATCH_SIZE, default=1): cv.int_range(
                     min=1, max=32
                 ),
+                cv.Optional(CONF_RESET_PIN): pins.internal_gpio_output_pin_number,
+                cv.Optional(CONF_RESET_ACTIVE_LOW, default=True): cv.boolean,
+                cv.Optional(CONF_RESET_HOLD_MS, default=10): cv.int_range(
+                    min=0, max=1000
+                ),
+                cv.Optional(CONF_RESET_SETTLE_MS, default=100): cv.int_range(
+                    min=0, max=5000
+                ),
             }
         ),
     }
@@ -121,3 +132,12 @@ async def to_code(config):
                 mdio_scan_config[CONF_PHY_ADDR_BATCH_SIZE],
             )
         )
+        if CONF_RESET_PIN in mdio_scan_config:
+            cg.add(
+                var.set_mdio_scan_reset(
+                    mdio_scan_config[CONF_RESET_PIN],
+                    mdio_scan_config[CONF_RESET_ACTIVE_LOW],
+                    mdio_scan_config[CONF_RESET_HOLD_MS],
+                    mdio_scan_config[CONF_RESET_SETTLE_MS],
+                )
+            )
