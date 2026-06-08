@@ -1,0 +1,239 @@
+substitutions:
+  name: ecan-e02
+  friendly_name: ECAN E02
+
+  # Confirmed ECAN-E02 status LEDs. They are active-low.
+  link_led_pin: GPIO2
+  err_led_pin: GPIO4
+  can_led_pin: GPIO23
+  status_led_inverted: "true"
+
+  # Confirmed RTL8201 RMII wiring.
+  eth_mdc_pin: GPIO18
+  eth_mdio_pin: GPIO5
+  eth_clk_pin: GPIO0
+  eth_reset_pin: GPIO14
+  eth_phy_addr: "0"
+
+  # Confirmed CAN wiring through the TPT7721 isolator.
+  can_tx_pin: GPIO10
+  can_rx_pin: GPIO9
+  can_bit_rate: 500KBPS
+  can_mode: LISTENONLY
+  can_node_id: "0x02"
+
+packages:
+  bare: !include ecan-e02-bare.yaml
+
+esphome:
+  comment: "ECAN-E02 ESP32-U4WD Ethernet/CAN firmware"
+  build_path: build/ecan-e02-main
+  on_boot:
+    priority: 200
+    then:
+      - output.turn_off: link_led
+      - output.turn_off: can_led
+
+ethernet:
+  id: eth0
+  type: RTL8201
+  mdc_pin: ${eth_mdc_pin}
+  mdio_pin: ${eth_mdio_pin}
+  phy_addr: ${eth_phy_addr}
+  power_pin: ${eth_reset_pin}
+  clk:
+    mode: CLK_EXT_IN
+    pin: ${eth_clk_pin}
+  on_connect:
+    then:
+      - output.turn_on: link_led
+      - logger.log:
+          level: INFO
+          tag: ecan_net
+          format: "Ethernet connected"
+  on_disconnect:
+    then:
+      - output.turn_off: link_led
+      - logger.log:
+          level: WARN
+          tag: ecan_net
+          format: "Ethernet disconnected"
+
+api:
+
+ota:
+  - platform: esphome
+
+web_server:
+  port: 80
+
+debug:
+  update_interval: 60s
+
+output:
+  - platform: gpio
+    id: link_led
+    pin:
+      number: ${link_led_pin}
+      inverted: ${status_led_inverted}
+  - platform: gpio
+    id: can_led
+    pin:
+      number: ${can_led_pin}
+      inverted: ${status_led_inverted}
+
+light:
+  - platform: status_led
+    id: err_led
+    name: ${friendly_name} ERR LED
+    disabled_by_default: true
+    pin:
+      number: ${err_led_pin}
+      inverted: ${status_led_inverted}
+  - platform: binary
+    id: link_led_light
+    name: ${friendly_name} LINK LED
+    disabled_by_default: true
+    output: link_led
+  - platform: binary
+    id: can_led_light
+    name: ${friendly_name} CAN LED
+    disabled_by_default: true
+    output: can_led
+
+script:
+  - id: pulse_can_led
+    mode: restart
+    then:
+      - output.turn_on: can_led
+      - delay: 75ms
+      - output.turn_off: can_led
+
+globals:
+  - id: can_rx_frames
+    type: uint32_t
+    restore_value: false
+    initial_value: "0"
+  - id: can_tx_test_frames
+    type: uint32_t
+    restore_value: false
+    initial_value: "0"
+
+switch:
+  - platform: template
+    id: can_rx_logging
+    name: ${friendly_name} CAN RX Logging
+    disabled_by_default: true
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+
+canbus:
+  - platform: esp32_can
+    id: can0
+    tx_pin: ${can_tx_pin}
+    rx_pin: ${can_rx_pin}
+    can_id: ${can_node_id}
+    bit_rate: ${can_bit_rate}
+    mode: ${can_mode}
+    rx_queue_len: 32
+    tx_queue_len: 8
+    tx_enqueue_timeout: 100ms
+    on_frame:
+      - can_id: 0x000
+        can_id_mask: 0x000
+        then:
+          - script.execute: pulse_can_led
+          - lambda: |-
+              id(can_rx_frames)++;
+              std::string bytes;
+              char item[4];
+              for (auto b : x) {
+                snprintf(item, sizeof(item), "%02X", b);
+                if (!bytes.empty()) {
+                  bytes += " ";
+                }
+                bytes += item;
+              }
+              char frame[128];
+              snprintf(frame, sizeof(frame), "id=0x%08X rtr=%s len=%u data=%s",
+                       static_cast<unsigned>(can_id),
+                       remote_transmission_request ? "true" : "false",
+                       static_cast<unsigned>(x.size()),
+                       bytes.c_str());
+              id(can_last_frame).publish_state(frame);
+              if (id(can_rx_logging).state) {
+                ESP_LOGI("ecan_can", "rx %s", frame);
+              }
+
+binary_sensor:
+  - platform: status
+    name: ${friendly_name} API Status
+    disabled_by_default: true
+
+button:
+  - platform: template
+    name: ${friendly_name} CAN Test Frame
+    disabled_by_default: true
+    on_press:
+      - if:
+          condition:
+            lambda: 'return std::string("${can_mode}") == "NORMAL";'
+          then:
+            - script.execute: pulse_can_led
+            - lambda: |-
+                id(can_tx_test_frames)++;
+            - canbus.send:
+                canbus_id: can0
+                can_id: 0x602
+                data: [0x45, 0x43, 0x41, 0x4E, 0x54, 0x58]
+          else:
+            - logger.log:
+                level: WARN
+                tag: ecan_can
+                format: "CAN test frame skipped because can_mode is ${can_mode}; set can_mode to NORMAL to transmit"
+
+sensor:
+  - platform: template
+    name: ${friendly_name} CAN RX Frames
+    disabled_by_default: true
+    accuracy_decimals: 0
+    update_interval: 10s
+    lambda: |-
+      return id(can_rx_frames);
+  - platform: template
+    name: ${friendly_name} CAN Test TX Frames
+    disabled_by_default: true
+    accuracy_decimals: 0
+    update_interval: 10s
+    lambda: |-
+      return id(can_tx_test_frames);
+  - platform: debug
+    free:
+      name: ${friendly_name} Heap Free
+      disabled_by_default: true
+    block:
+      name: ${friendly_name} Heap Max Block
+      disabled_by_default: true
+    loop_time:
+      name: ${friendly_name} Loop Time
+      disabled_by_default: true
+
+text_sensor:
+  - platform: template
+    id: can_last_frame
+    name: ${friendly_name} CAN Last Frame
+    disabled_by_default: true
+    update_interval: never
+  - platform: ethernet_info
+    ip_address:
+      name: ${friendly_name} IP Address
+    mac_address:
+      name: ${friendly_name} Ethernet MAC
+      disabled_by_default: true
+  - platform: debug
+    device:
+      name: ${friendly_name} Device Info
+      disabled_by_default: true
+    reset_reason:
+      name: ${friendly_name} Reset Reason
+      disabled_by_default: true

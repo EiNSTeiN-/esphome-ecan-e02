@@ -7,7 +7,7 @@ This workspace is set up for an ECAN-E02 board with:
 - RTL8201-compatible RMII Ethernet PHY with confirmed MDC/MDIO/reset and RMII data/control traces
 - onboard CAN transceiver traced through a TPT7721 isolator on `GPIO10` TX and `GPIO9` RX
 
-The first step is intentionally small: flash a bare ESP32 ESPHome image over USB, verify serial logs, then bring up CAN and trace the remaining PHY clock wiring before enabling Ethernet.
+The first step is intentionally small: flash a bare ESP32 ESPHome image over USB, verify serial logs, then move to the main Ethernet/CAN firmware once serial recovery works.
 
 ## Quick start
 
@@ -63,9 +63,33 @@ If `DTR` and `RTS` are wired directly from the USB-UART adapter to `GPIO0/BOOT` 
 
 The bare firmware enables only serial logging and the local `ecan_e02` component. It does not need WiFi secrets and is the safest target while the board pinout is unknown.
 
+## Main firmware
+
+`configs/ecan-e02.yaml` is the main ECAN-E02 firmware. It enables the confirmed RTL8201 Ethernet path, ESP32 TWAI/CAN in listen-only mode by default, active-low status LEDs, API, OTA, the web server, and disabled-by-default diagnostic entities.
+
+Build and flash it intentionally after the bare firmware is recoverable over serial:
+
+```sh
+make config-board
+make compile-board
+make flash-board PORT=/dev/ttyACM0
+make logs-board PORT=/dev/ttyACM0
+```
+
+The default CAN mode is `LISTENONLY`, so the node will receive CAN traffic without acknowledging or transmitting. Change the `can_mode` substitution in `configs/ecan-e02.yaml` to `NORMAL` only when you want the board to participate on the bus.
+
+Status LED behavior in the main firmware:
+
+| LED label | Firmware behavior |
+| --- | --- |
+| LINK | On while ESPHome reports Ethernet connected. |
+| ERR | ESPHome status LED; blinks for warnings/errors. |
+| CAN | Pulses on CAN RX and test TX attempts. |
+
 ## Useful files
 
 - `configs/ecan-e02-bare.yaml`: first flash target
+- `configs/ecan-e02.yaml`: main Ethernet/CAN firmware with status LEDs, API, OTA, web server, and diagnostics
 - `configs/ecan-e02-wifi.yaml.example`: optional WiFi/API/OTA layer once serial flashing works
 - `configs/ecan-e02-gpio-probe.yaml.example`: passive GPIO input sampler for suspected pins
 - `configs/ecan-e02-led-test.yaml`: status LED sequencer for traced LINK, ERR, and CAN LEDs
@@ -89,8 +113,8 @@ The bare firmware enables only serial logging and the local `ecan_e02` component
 1. Flash `configs/ecan-e02-bare.yaml` and confirm serial logs show the `ecan_e02` component.
 2. Use `configs/ecan-e02-can-self-test.yaml` with the board powered from its intended 12 V input to verify the internal CAN path.
 3. Use `configs/ecan-e02-can-normal-tx.yaml` and the ESP32-S3-Zero VP230 peer to verify CANH/CANL with an external node.
-4. Trace RTL8201 PHY address straps on pins 24 and 25; MDC, MDIO, reset, REF_CLK, and the fixed RMII data/control pins are already confirmed.
-5. Copy an example YAML to a real config, fill in confirmed pins, and validate with `./scripts/esphome.sh config`.
+4. Flash `configs/ecan-e02.yaml` and verify Ethernet startup logs over serial.
+5. Trace RTL8201 PHY address straps on pins 24 and 25 only if the address 0/1 alias needs to be explained; `phy_addr: 0` is the working assumption for ESPHome.
 
 For the ESP32-U4WD target, GPIO16/GPIO17 are connected to the in-package flash. Do not use them for RTL8201 MDC/MDIO, RMII clock output, reset, power-enable, or passive GPIO probing.
 
@@ -99,6 +123,7 @@ For the ESP32-U4WD target, GPIO16/GPIO17 are connected to the in-package flash. 
 The following were validated with ESPHome 2026.5.x, most recently 2026.5.3:
 
 - `configs/ecan-e02-bare.yaml`: config and compile
+- `configs/ecan-e02.yaml`: config, compile, flash, and stable boot logs; CAN initializes in `LISTENONLY` mode, and Ethernet starts with RTL8201 `phy_addr: 0`
 - `configs/ecan-e02-led-test.yaml`: config and compile
 - `configs/ecan-e02-can-listen.yaml`: config
 - `configs/ecan-e02-can-self-test.yaml`: config, compile, flash, and repeated `CAN self-test PASS` logs when the board is powered from its intended 12 V input
@@ -108,7 +133,7 @@ The following were validated with ESPHome 2026.5.x, most recently 2026.5.3:
 - `configs/ecan-e02-ethernet-mdio-scan.yaml`: config, compile, flash, and PHY ID logs on confirmed `GPIO18` MDC, `GPIO5` MDIO, and `GPIO14` reset; the PHY responds at addresses 0 and 1 with `phy_id=0x001C:0xC816`
 - bare firmware flash and boot logs on the ESP32-U4WD target over CH343 CDC ACM; esptool reports this target as `ESP32-U4WDH`
 
-The bare serial-only config remains the safest first flash target. Compile the specific config you intend to upload before flashing.
+The bare serial-only config remains the safest first flash target. Compile the specific config you intend to upload before flashing. Ethernet link and DHCP still need to be verified with the RJ45 port connected to a live network.
 
 ## ESPHome notes
 
@@ -140,4 +165,4 @@ The ESP32 classic RMII data pins are fixed in ESPHome/ESP-IDF:
 | GPIO26 | RXD1 |
 | GPIO27 | CRS_DV |
 
-The remaining Ethernet trace targets are the PHY address straps on RTL8201F pins 24 and 25. The clock path is confirmed as RTL8201F `TXC/REF_CLK` output into ESP32 `GPIO0` using `CLK_EXT_IN`.
+The remaining Ethernet trace targets are the PHY address straps on RTL8201F pins 24 and 25, mainly to explain why MDIO responds at both addresses 0 and 1. The clock path is confirmed as RTL8201F `TXC/REF_CLK` output into ESP32 `GPIO0` using `CLK_EXT_IN`.

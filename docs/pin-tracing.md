@@ -32,6 +32,8 @@ Observed ECAN-E02 status LED traces:
 
 The LED test firmware drives LINK, ERR, then CAN for 500 ms each. The LEDs appear to be active-low: with `status_led_inverted: "false"`, the earlier test made the selected LED blink off rather than on. `configs/ecan-e02-led-test.yaml` therefore uses `status_led_inverted: "true"` so each log label should match a visible LED-on pulse.
 
+The main firmware in `configs/ecan-e02.yaml` uses the same active-low polarity. LINK follows Ethernet connect/disconnect, ERR is ESPHome's status LED, and CAN pulses on CAN RX or test TX activity.
+
 ## CAN transceiver
 
 Find the CAN transceiver package first. Common markings are SN65HVD230, TJA1050, TJA1051, MCP2562, VP230, or similar.
