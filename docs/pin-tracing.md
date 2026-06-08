@@ -50,7 +50,9 @@ Unpowered continuity checks confirm TPT7721 `pin 7 = IN1` connects only to ESP32
 
 The SIT65HVD233-style transceiver `LBK` pin is tied to ground, so hardware transceiver loopback is disabled. Without another CAN node, use `configs/ecan-e02-can-self-test.yaml` for an ESP32 TWAI no-ACK self-reception test. That verifies the ESP32 TWAI peripheral and GPIO routing, but it does not prove the CANH/CANL physical bus path.
 
-Current CAN self-test status: with a 120 ohm resistor across CANH/CANL, TWAI starts successfully on `GPIO10` TX and `GPIO9` RX at `500KBPS`, then the first self-test frame drives the controller to `BUS_OFF` with `tx_err=128`, `tx_fail=1`, and `bus_err=16`. That points to the transmitted bitstream not being observed correctly on RX through the isolator/transceiver path, or the transceiver being disabled/not powered.
+Current CAN self-test status: with the ECAN-E02 powered from its intended 12 V supply input and a 120 ohm resistor across CANH/CANL, `configs/ecan-e02-can-self-test.yaml` passes repeatedly on `GPIO10` TX and `GPIO9` RX at `500KBPS`. The self-test firmware logs `CAN self-test PASS` frames with `id=0x321`.
+
+Do not treat ESP32-side 3.3 V test-pad power as sufficient for CAN validation. The CAN/transceiver side is powered through the board power path, including the isolated DC/DC module and MIC5233 rail. If only the ESP32 side is powered, the CAN side may be unpowered and TWAI/CAN results can look like a broken RX return path.
 
 If the SIT `RS` pin is too difficult to probe directly, use `configs/ecan-e02-can-gpio-probe.yaml`. It pulses ESP32 `GPIO10` low briefly and samples ESP32 `GPIO9` without starting TWAI, so the controller cannot enter bus-off while the physical TX/RX path is checked. Current GPIO-probe status: after switching `GPIO10` to input/output mode, `GPIO10` readback is fixed and follows the commanded level (`tx_gpio=1` high, `tx_gpio=0` low). `GPIO9` still remains high during the low TX pulse, so the remaining issue is beyond ESP32 `GPIO10` output readback: check the TPT7721 output side, CAN transceiver enable/power, and RX return path.
 

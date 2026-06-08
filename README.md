@@ -5,9 +5,9 @@ This workspace is set up for an ECAN-E02 board with:
 - ESP32-U4WD flash target, treated as a classic ESP32/`esp32dev` in ESPHome
 - external CH343 USB-UART adapter for flashing/logging
 - likely RTL8201 RMII Ethernet PHY
-- onboard CAN transceiver, pins still to be confirmed
+- onboard CAN transceiver traced through a TPT7721 isolator on `GPIO10` TX and `GPIO9` RX
 
-The first step is intentionally small: flash a bare ESP32 ESPHome image over USB, verify serial logs, then trace the PHY and CAN wiring before enabling bus drivers.
+The first step is intentionally small: flash a bare ESP32 ESPHome image over USB, verify serial logs, then bring up CAN and trace the PHY wiring before enabling Ethernet.
 
 ## Quick start
 
@@ -86,18 +86,19 @@ The bare firmware enables only serial logging and the local `ecan_e02` component
 ## Expected next steps
 
 1. Flash `configs/ecan-e02-bare.yaml` and confirm serial logs show the `ecan_e02` component.
-2. Trace CAN transceiver TXD/RXD to ESP32 GPIOs.
-3. Trace RTL8201 MDC, MDIO, REF_CLK, power/reset, and PHY address straps.
-4. Copy an example YAML to a real config, fill in confirmed pins, and validate with `./scripts/esphome.sh config`.
+2. Use `configs/ecan-e02-can-self-test.yaml` with the board powered from its intended 12 V input to verify the internal CAN path.
+3. Use `configs/ecan-e02-can-normal-tx.yaml` and the ESP32-S3-Zero VP230 peer to verify CANH/CANL with an external node.
+4. Trace RTL8201 MDC, MDIO, REF_CLK, power/reset, and PHY address straps.
+5. Copy an example YAML to a real config, fill in confirmed pins, and validate with `./scripts/esphome.sh config`.
 
 ## Verification
 
-The following were validated with ESPHome 2026.5.1:
+The following were validated with ESPHome 2026.5.x, most recently 2026.5.3:
 
 - `configs/ecan-e02-bare.yaml`: config and compile
 - `configs/ecan-e02-led-test.yaml`: config and compile
 - `configs/ecan-e02-can-listen.yaml`: config
-- `configs/ecan-e02-can-self-test.yaml`: config and compile
+- `configs/ecan-e02-can-self-test.yaml`: config, compile, flash, and repeated `CAN self-test PASS` logs when the board is powered from its intended 12 V input
 - `configs/ecan-e02-can-listen.yaml.example`: config and compile
 - `configs/ecan-e02-ethernet-rtl8201.yaml.example`: config and compile
 - `configs/ecan-e02-gpio-probe.yaml.example`: config
@@ -135,4 +136,4 @@ The ESP32 classic RMII data pins are fixed in ESPHome/ESP-IDF:
 | GPIO26 | RXD1 |
 | GPIO27 | CRS_DV |
 
-The pins still worth tracing are usually `MDC`, `MDIO`, `REF_CLK`, PHY address straps, reset/power enable, and the CAN transceiver TXD/RXD pair.
+The pins still worth tracing are usually `MDC`, `MDIO`, `REF_CLK`, PHY address straps, and reset/power enable.
