@@ -136,15 +136,48 @@ On a typical RTL8201 design, these are the variable or board-specific signals to
 
 | Signal | Common ESP32 GPIO | Why it matters |
 | --- | --- | --- |
-| MDC | Trace required | ESPHome requires `mdc_pin`; GPIO23 is already traced to the CAN LED. |
-| MDIO | GPIO18 | ESPHome requires `mdio_pin`. |
-| REF_CLK | GPIO0 input, GPIO16 output, or GPIO17 output | ESPHome requires `clk.mode` and `clk.pin`. |
+| MDC | Trace required | ESPHome requires `mdc_pin`; GPIO23 is already traced to the CAN LED, and GPIO16/GPIO17 are not usable on this U4WD target. |
+| MDIO | Trace required; GPIO18 is common but unconfirmed | ESPHome requires `mdio_pin`. |
+| REF_CLK | Prefer tracing for GPIO0 input or an external clock circuit | ESPHome requires `clk.mode` and `clk.pin`; GPIO16/GPIO17 clock-output modes are unavailable because they are ESP32-U4WD in-package flash pins. |
 | PHYAD straps | address 0 or 1 are common | ESPHome requires `phy_addr`. |
-| RESET or POWER_EN | sometimes GPIO16/17 or tied high | ESPHome may need `power_pin`. |
+| RESET or POWER_EN | trace required or tied high | ESPHome may need `power_pin`; do not assume GPIO16/GPIO17. |
 
 Start with the example in `configs/ecan-e02-ethernet-rtl8201.yaml.example` only after replacing MDC, MDIO, REF_CLK, and PHY address with confirmed traces.
 
 GPIO0 is also a boot strap pin. If the board uses GPIO0 as RMII REF_CLK input, the PHY clock circuit must not prevent normal boot mode.
+
+Use `configs/ecan-e02-ethernet-mdio-scan.yaml` to verify traced MDC/MDIO candidates before enabling full Ethernet. The scanner bit-bangs IEEE 802.3 Clause 22 management reads and logs any plausible PHY ID found across addresses 0 through 31. It does not enable the ESP32 Ethernet MAC or RMII data pins.
+
+The checked-in scan substitutions are compile-time placeholders only:
+
+```yaml
+mdc_pin: GPIO32
+mdio_pin: GPIO33
+```
+
+Change those substitutions to traced pins before flashing. The scanner rejects GPIO6-GPIO11, GPIO16/GPIO17, and the confirmed CAN pins GPIO9/GPIO10. If the scan is correct and the PHY is powered/out of reset, logs should contain a line like:
+
+```text
+MDIO PHY addr=0 bmcr=0x.... bmsr=0x.... phy_id=0x....:0x....
+```
+
+If it logs `MDIO scan found no plausible PHY`, recheck PHY power/reset, MDC/MDIO continuity, and PHY address straps.
+
+For an RTL8201F QFN-32, useful physical trace points are:
+
+| RTL8201F pin | Signal | Trace target |
+| --- | --- | --- |
+| 22 | MDC | ESP32 management clock GPIO. |
+| 23 | MDIO | ESP32 management data GPIO; should have a pull-up. |
+| 15 | TXC / REF_CLK | ESP32 `GPIO0` for `CLK_EXT_IN`, or an external/PHY clock circuit. GPIO16/GPIO17 are not available on this ESP32-U4WD board. |
+| 12 | RXD3 / CLK_CTL | Strap: high means REF_CLK input mode; low means REF_CLK output mode. |
+| 21 | PHYRSTB | Reset or power-control circuit; must be high after boot. |
+| 9, 10 | RXD0, RXD1 | ESP32 `GPIO25`, `GPIO26`. |
+| 16, 17 | TXD0, TXD1 | ESP32 `GPIO19`, `GPIO22`. |
+| 20 | TXEN | ESP32 `GPIO21`. |
+| 26 | CRS_DV | ESP32 `GPIO27`. |
+
+If the package is RTL8201FL/FN 48-pin instead, use the datasheet pin table rather than the QFN-32 pin numbers above.
 
 ## Passive GPIO firmware probing
 
@@ -153,5 +186,6 @@ After the bare firmware works, copy `configs/ecan-e02-gpio-probe.yaml.example` t
 Do not probe:
 
 - GPIO6-GPIO11, used by ESP32 flash
+- GPIO16/GPIO17, used by ESP32-U4WD in-package flash
 - pins that are already active in another component
 - pins connected to external 5 V logic unless the trace confirms level shifting

@@ -75,6 +75,7 @@ The bare firmware enables only serial logging and the local `ecan_e02` component
 - `configs/ecan-e02-can-gpio-probe.yaml`: short-pulse GPIO-level CAN TX/RX path probe that does not use TWAI
 - `configs/ecan-e02-can-meter-probe.yaml`: meter-friendly CAN TX/RX path probe with 5 second high/low windows
 - `configs/can-peer-esp32-s3-zero-vp230.yaml`: ESP32-S3-Zero plus VP230 external CAN peer
+- `configs/ecan-e02-ethernet-mdio-scan.yaml`: bit-banged MDC/MDIO scanner for traced RTL8201 management pins
 - `configs/ecan-e02-can-listen.yaml.example`: ESP32 TWAI/CAN listen-only skeleton
 - `configs/ecan-e02-ethernet-rtl8201.yaml.example`: likely RTL8201 RMII skeleton
 - `scripts/ch343-driver.sh`: fetch/build/load the WCH CH343-family vendor driver
@@ -88,8 +89,10 @@ The bare firmware enables only serial logging and the local `ecan_e02` component
 1. Flash `configs/ecan-e02-bare.yaml` and confirm serial logs show the `ecan_e02` component.
 2. Use `configs/ecan-e02-can-self-test.yaml` with the board powered from its intended 12 V input to verify the internal CAN path.
 3. Use `configs/ecan-e02-can-normal-tx.yaml` and the ESP32-S3-Zero VP230 peer to verify CANH/CANL with an external node.
-4. Trace RTL8201 MDC, MDIO, REF_CLK, power/reset, and PHY address straps.
+4. Trace RTL8201 MDC, MDIO, REF_CLK, power/reset, and PHY address straps; use `configs/ecan-e02-ethernet-mdio-scan.yaml` to verify MDC/MDIO before enabling Ethernet.
 5. Copy an example YAML to a real config, fill in confirmed pins, and validate with `./scripts/esphome.sh config`.
+
+For the ESP32-U4WD target, GPIO16/GPIO17 are connected to the in-package flash. Do not use them for RTL8201 MDC/MDIO, RMII clock output, reset, power-enable, or passive GPIO probing.
 
 ## Verification
 
@@ -102,6 +105,7 @@ The following were validated with ESPHome 2026.5.x, most recently 2026.5.3:
 - `configs/ecan-e02-can-listen.yaml.example`: config and compile
 - `configs/ecan-e02-ethernet-rtl8201.yaml.example`: config and compile
 - `configs/ecan-e02-gpio-probe.yaml.example`: config
+- `configs/ecan-e02-ethernet-mdio-scan.yaml`: config and compile with placeholder pins; replace MDC/MDIO with traced pins before flashing
 - bare firmware flash and boot logs on the ESP32-U4WD target over CH343 CDC ACM; esptool reports this target as `ESP32-U4WDH`
 
 The bare serial-only config remains the safest first flash target. Compile the specific config you intend to upload before flashing.
@@ -136,4 +140,4 @@ The ESP32 classic RMII data pins are fixed in ESPHome/ESP-IDF:
 | GPIO26 | RXD1 |
 | GPIO27 | CRS_DV |
 
-The pins still worth tracing are usually `MDC`, `MDIO`, `REF_CLK`, PHY address straps, and reset/power enable.
+The pins still worth tracing are usually `MDC`, `MDIO`, `REF_CLK`, PHY address straps, and reset/power enable. On this ESP32-U4WD board, expect `REF_CLK` to be an input on GPIO0 or an external clock circuit rather than an ESP32 clock output on GPIO16/GPIO17.

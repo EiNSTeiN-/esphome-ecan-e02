@@ -1,8 +1,8 @@
 packages:
   bare: !include ecan-e02-bare.yaml
 
-# Passive input sampling only. Keep GPIO6-GPIO11 out of this list; those are
-# connected to flash on classic ESP32 targets.
+# Passive input sampling only. Keep GPIO6-GPIO11 and GPIO16/GPIO17 out of this
+# list; those are flash-related pins on the ESP32-U4WD target.
 ecan_e02:
   id: board
   update_interval: 2s
@@ -14,10 +14,7 @@ ecan_e02:
     - GPIO13
     - GPIO14
     - GPIO15
-    - GPIO16
-    - GPIO17
     - GPIO18
     - GPIO23
     - GPIO32
     - GPIO33
-

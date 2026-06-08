@@ -1,5 +1,6 @@
 #include "ecan_e02.h"
 
+#include "esphome/core/application.h"
 #include "esphome/core/log.h"
 
 #include <cinttypes>
@@ -7,9 +8,11 @@
 #include <string>
 
 #ifdef USE_ESP32
+#include "driver/gpio.h"
 #include "esp_chip_info.h"
 #include "esp_flash.h"
 #include "esp_mac.h"
+#include "esp_rom_sys.h"
 #include "esp_system.h"
 #endif
 
@@ -21,6 +24,82 @@ namespace esphome {
 namespace ecan_e02 {
 
 static const char *const TAG = "ecan_e02";
+
+#if defined(USE_ESP32) && defined(USE_ECAN_E02_MDIO_SCAN)
+static void mdio_delay_() { esp_rom_delay_us(5); }
+
+static void mdio_drive_low_(gpio_num_t mdio) {
+  gpio_set_level(mdio, 0);
+  gpio_set_direction(mdio, GPIO_MODE_OUTPUT);
+}
+
+static void mdio_release_(gpio_num_t mdio) {
+  gpio_set_direction(mdio, GPIO_MODE_INPUT);
+  gpio_set_pull_mode(mdio, GPIO_PULLUP_ONLY);
+}
+
+static void mdio_clock_(gpio_num_t mdc) {
+  mdio_delay_();
+  gpio_set_level(mdc, 1);
+  mdio_delay_();
+  gpio_set_level(mdc, 0);
+  mdio_delay_();
+}
+
+static void mdio_write_bit_(gpio_num_t mdc, gpio_num_t mdio, bool bit) {
+  if (bit) {
+    mdio_release_(mdio);
+  } else {
+    mdio_drive_low_(mdio);
+  }
+  mdio_clock_(mdc);
+}
+
+static bool mdio_read_bit_(gpio_num_t mdc, gpio_num_t mdio) {
+  mdio_release_(mdio);
+  mdio_delay_();
+  gpio_set_level(mdc, 1);
+  mdio_delay_();
+  bool bit = gpio_get_level(mdio) != 0;
+  gpio_set_level(mdc, 0);
+  mdio_delay_();
+  return bit;
+}
+
+static void mdio_write_bits_(gpio_num_t mdc, gpio_num_t mdio, uint32_t value, uint8_t bits) {
+  for (int8_t bit = bits - 1; bit >= 0; bit--) {
+    mdio_write_bit_(mdc, mdio, (value >> bit) & 0x01);
+  }
+}
+
+static uint16_t mdio_read_register_(gpio_num_t mdc, gpio_num_t mdio, uint8_t phy_addr, uint8_t reg_addr,
+                                    bool *valid_turnaround) {
+  gpio_set_level(mdc, 0);
+
+  for (uint8_t i = 0; i < 32; i++) {
+    mdio_write_bit_(mdc, mdio, true);
+  }
+
+  mdio_write_bits_(mdc, mdio, 0b01, 2);        // Start of frame.
+  mdio_write_bits_(mdc, mdio, 0b10, 2);        // Read operation.
+  mdio_write_bits_(mdc, mdio, phy_addr, 5);
+  mdio_write_bits_(mdc, mdio, reg_addr, 5);
+
+  (void) mdio_read_bit_(mdc, mdio);            // First turnaround bit is high impedance.
+  bool ta_zero = !mdio_read_bit_(mdc, mdio);   // PHY should drive the second turnaround bit low.
+  *valid_turnaround = ta_zero;
+
+  uint16_t value = 0;
+  for (uint8_t i = 0; i < 16; i++) {
+    value = static_cast<uint16_t>((value << 1) | (mdio_read_bit_(mdc, mdio) ? 1 : 0));
+  }
+
+  mdio_release_(mdio);
+  return value;
+}
+
+static bool mdio_register_value_plausible_(uint16_t value) { return value != 0x0000 && value != 0xFFFF; }
+#endif
 
 #if defined(USE_ESP32) && defined(USE_ECAN_E02_CAN_SELF_TEST)
 static bool get_twai_timing(uint32_t bit_rate_kbps, twai_timing_config_t *config) {
@@ -96,6 +175,10 @@ void EcanE02Component::setup() {
   if (this->can_self_test_enabled_) {
     this->can_self_test_ready_ = this->setup_can_self_test_();
   }
+
+  if (this->mdio_scan_enabled_) {
+    this->mdio_scan_ready_ = this->setup_mdio_scan_();
+  }
 }
 
 void EcanE02Component::dump_config() {
@@ -136,11 +219,22 @@ void EcanE02Component::dump_config() {
                   this->can_self_test_tx_pin_, this->can_self_test_rx_pin_, this->can_self_test_bit_rate_kbps_,
                   TRUEFALSE(this->can_self_test_ready_));
   }
+
+  if (this->mdio_scan_enabled_) {
+    ESP_LOGCONFIG(TAG, "  MDIO scan: mdc=GPIO%u mdio=GPIO%u phy_addr=%u..%u batch=%u ready=%s",
+                  this->mdio_scan_mdc_pin_, this->mdio_scan_mdio_pin_, this->mdio_scan_phy_addr_start_,
+                  this->mdio_scan_phy_addr_end_, this->mdio_scan_phy_addr_batch_size_,
+                  TRUEFALSE(this->mdio_scan_ready_));
+  }
 }
 
 void EcanE02Component::update() {
   if (this->can_self_test_ready_) {
     this->run_can_self_test_();
+  }
+
+  if (this->mdio_scan_ready_) {
+    this->run_mdio_scan_();
   }
 
   if (this->probe_pins_.empty()) {
@@ -241,6 +335,80 @@ void EcanE02Component::run_can_self_test_() {
   } else {
     ESP_LOGE(TAG, "CAN self-test FAIL seq=%" PRIu32 " rx_id=0x%03" PRIX32 " rx_len=%u", sequence,
              rx_message.identifier, rx_message.data_length_code);
+  }
+#endif
+}
+
+bool EcanE02Component::setup_mdio_scan_() {
+#if !defined(USE_ESP32) || !defined(USE_ECAN_E02_MDIO_SCAN)
+  ESP_LOGE(TAG, "MDIO scan is only available on ESP32 targets");
+  return false;
+#else
+  if (this->mdio_scan_phy_addr_start_ > this->mdio_scan_phy_addr_end_ ||
+      this->mdio_scan_phy_addr_end_ > 31) {
+    ESP_LOGE(TAG, "Invalid MDIO scan PHY address range: %u..%u", this->mdio_scan_phy_addr_start_,
+             this->mdio_scan_phy_addr_end_);
+    return false;
+  }
+
+  gpio_num_t mdc = static_cast<gpio_num_t>(this->mdio_scan_mdc_pin_);
+  gpio_num_t mdio = static_cast<gpio_num_t>(this->mdio_scan_mdio_pin_);
+  gpio_set_direction(mdc, GPIO_MODE_OUTPUT);
+  gpio_set_level(mdc, 0);
+  gpio_set_drive_capability(mdc, GPIO_DRIVE_CAP_0);
+  mdio_release_(mdio);
+  this->mdio_scan_next_phy_addr_ = this->mdio_scan_phy_addr_start_;
+  this->mdio_scan_hits_this_cycle_ = 0;
+  this->mdio_scan_valid_ta_this_cycle_ = 0;
+
+  ESP_LOGI(TAG, "MDIO scan ready on mdc=GPIO%u mdio=GPIO%u addr=%u..%u batch=%u", this->mdio_scan_mdc_pin_,
+           this->mdio_scan_mdio_pin_, this->mdio_scan_phy_addr_start_, this->mdio_scan_phy_addr_end_,
+           this->mdio_scan_phy_addr_batch_size_);
+  return true;
+#endif
+}
+
+void EcanE02Component::run_mdio_scan_() {
+#if defined(USE_ESP32) && defined(USE_ECAN_E02_MDIO_SCAN)
+  gpio_num_t mdc = static_cast<gpio_num_t>(this->mdio_scan_mdc_pin_);
+  gpio_num_t mdio = static_cast<gpio_num_t>(this->mdio_scan_mdio_pin_);
+  for (uint8_t scanned = 0; scanned < this->mdio_scan_phy_addr_batch_size_; scanned++) {
+    uint8_t phy_addr = this->mdio_scan_next_phy_addr_;
+    bool valid_id1 = false;
+    bool valid_id2 = false;
+    uint16_t phy_id1 = mdio_read_register_(mdc, mdio, phy_addr, 2, &valid_id1);
+    uint16_t phy_id2 = mdio_read_register_(mdc, mdio, phy_addr, 3, &valid_id2);
+    if (valid_id1 || valid_id2) {
+      this->mdio_scan_valid_ta_this_cycle_++;
+    }
+
+    if (valid_id1 && valid_id2 && mdio_register_value_plausible_(phy_id1) &&
+        mdio_register_value_plausible_(phy_id2)) {
+      bool valid_bmcr = false;
+      bool valid_bmsr = false;
+      uint16_t bmcr = mdio_read_register_(mdc, mdio, phy_addr, 0, &valid_bmcr);
+      uint16_t bmsr = mdio_read_register_(mdc, mdio, phy_addr, 1, &valid_bmsr);
+      this->mdio_scan_hits_this_cycle_++;
+
+      ESP_LOGI(TAG, "MDIO PHY addr=%u bmcr=0x%04X%s bmsr=0x%04X%s phy_id=0x%04X:0x%04X", phy_addr, bmcr,
+               valid_bmcr ? "" : "?", bmsr, valid_bmsr ? "" : "?", phy_id1, phy_id2);
+    }
+
+    if (phy_addr >= this->mdio_scan_phy_addr_end_) {
+      if (this->mdio_scan_hits_this_cycle_ == 0) {
+        ESP_LOGW(TAG,
+                 "MDIO scan found no plausible PHY on mdc=GPIO%u mdio=GPIO%u addr=%u..%u valid_ta_addrs=%u",
+                 this->mdio_scan_mdc_pin_, this->mdio_scan_mdio_pin_, this->mdio_scan_phy_addr_start_,
+                 this->mdio_scan_phy_addr_end_, this->mdio_scan_valid_ta_this_cycle_);
+      }
+      this->mdio_scan_next_phy_addr_ = this->mdio_scan_phy_addr_start_;
+      this->mdio_scan_hits_this_cycle_ = 0;
+      this->mdio_scan_valid_ta_this_cycle_ = 0;
+      break;
+    }
+
+    this->mdio_scan_next_phy_addr_ = static_cast<uint8_t>(phy_addr + 1);
+    App.feed_wdt();
   }
 #endif
 }

@@ -23,6 +23,15 @@ class EcanE02Component : public PollingComponent {
     this->can_self_test_rx_pin_ = rx_pin;
     this->can_self_test_bit_rate_kbps_ = bit_rate_kbps;
   }
+  void set_mdio_scan(uint8_t mdc_pin, uint8_t mdio_pin, uint8_t phy_addr_start, uint8_t phy_addr_end,
+                     uint8_t phy_addr_batch_size) {
+    this->mdio_scan_enabled_ = true;
+    this->mdio_scan_mdc_pin_ = mdc_pin;
+    this->mdio_scan_mdio_pin_ = mdio_pin;
+    this->mdio_scan_phy_addr_start_ = phy_addr_start;
+    this->mdio_scan_phy_addr_end_ = phy_addr_end;
+    this->mdio_scan_phy_addr_batch_size_ = phy_addr_batch_size;
+  }
 
  protected:
   std::vector<GPIOPin *> probe_pins_{};
@@ -32,9 +41,21 @@ class EcanE02Component : public PollingComponent {
   uint8_t can_self_test_rx_pin_{0};
   uint32_t can_self_test_bit_rate_kbps_{500};
   uint32_t can_self_test_counter_{0};
+  bool mdio_scan_enabled_{false};
+  bool mdio_scan_ready_{false};
+  uint8_t mdio_scan_mdc_pin_{0};
+  uint8_t mdio_scan_mdio_pin_{0};
+  uint8_t mdio_scan_phy_addr_start_{0};
+  uint8_t mdio_scan_phy_addr_end_{31};
+  uint8_t mdio_scan_phy_addr_batch_size_{1};
+  uint8_t mdio_scan_next_phy_addr_{0};
+  uint8_t mdio_scan_hits_this_cycle_{0};
+  uint8_t mdio_scan_valid_ta_this_cycle_{0};
 
   bool setup_can_self_test_();
   void run_can_self_test_();
+  bool setup_mdio_scan_();
+  void run_mdio_scan_();
 };
 
 }  // namespace ecan_e02

@@ -4,6 +4,8 @@ packages:
 # This is the common ESP32 RMII layout, not the confirmed ECAN-E02 layout.
 # GPIO23 is traced to the CAN status LED, so replace MDC, MDIO, REF_CLK,
 # phy_addr, and any power/reset pin with confirmed traces before flashing.
+# GPIO16/GPIO17 are ESP32-U4WD in-package flash pins and are not available
+# for RMII clock output on this board.
 ethernet:
   type: RTL8201
   mdc_pin: GPIO23
