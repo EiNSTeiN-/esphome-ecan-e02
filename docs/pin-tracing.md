@@ -46,6 +46,8 @@ TPT7721      <-> SIT65HVD233-style CAN transceiver
 
 On the TPT7721 SOP8 top-view pinout, this means the ESP32 side is using `pin 7 = IN1` for CAN TX and `pin 6 = OUT2` for CAN RX. The transceiver side of those isolated channels is confirmed as `pin 2 = OUT1` driving SIT `pin 1 = D/TXD`, and SIT `pin 4 = R/RXD` driving TPT7721 `pin 3 = IN2`.
 
+Unpowered continuity checks confirm TPT7721 `pin 7 = IN1` connects only to ESP32 package pin 29 / `GPIO10`, with no continuity to other TPT7721 pins. The measured resistance from TPT7721 pin 7 to ESP-side ground is about 1.15 Mohm, and to ESP-side 3.3 V is about 1.20 Mohm. TPT7721 `pin 6 = OUT2` connects to ESP32 package pin 28 / `GPIO9` and is not shorted to adjacent pins. These measurements rule out a static low-ohm short on the ESP32-side TX/RX paths.
+
 The SIT65HVD233-style transceiver `LBK` pin is tied to ground, so hardware transceiver loopback is disabled. Without another CAN node, use `configs/ecan-e02-can-self-test.yaml` for an ESP32 TWAI no-ACK self-reception test. That verifies the ESP32 TWAI peripheral and GPIO routing, but it does not prove the CANH/CANL physical bus path.
 
 Current CAN self-test status: with a 120 ohm resistor across CANH/CANL, TWAI starts successfully on `GPIO10` TX and `GPIO9` RX at `500KBPS`, then the first self-test frame drives the controller to `BUS_OFF` with `tx_err=128`, `tx_fail=1`, and `bus_err=16`. That points to the transmitted bitstream not being observed correctly on RX through the isolator/transceiver path, or the transceiver being disabled/not powered.
@@ -55,6 +57,8 @@ If the SIT `RS` pin is too difficult to probe directly, use `configs/ecan-e02-ca
 Observed CAN protection: board designator `D2` is a 3-pin SOT-23 part marked `EL24`, which matches ST `ESDCAN24-2BLY`, a dual-line CAN TVS protector. This device should be on CANH/CANL and CAN-side ground. If an apparent SIT `RS` trace reaches `D2`, recheck the SIT pin orientation because adjacent SIT pins 6 and 7 are the expected CANL/CANH pins.
 
 Observed local power IC: a 5-pin `M 5233` package is confirmed as Microchip/Micrel MIC5233. Its input and enable are tied high, and its output supplies SIT `VCC` plus TPT7721 `VCCA` on the CAN/transceiver side.
+
+Observed TPT7721 supply pins: TPT7721 `pin 8 = VCCB` has about 200 mohm continuity to ESP-side 3.3 V, and `pin 5 = GNDB` has about 200 mohm continuity to ESP-side ground. TPT7721 `pin 1 = VCCA` connects to MIC5233 output, and `pin 4 = GNDA` connects to MIC5233 ground. TPT7721 `GNDA` and `GNDB` measure about 500 ohm apart on the assembled board, so the two ground domains are not hard-shorted but do have a measurable DC path that should be traced.
 
 | MIC5233 pin | Signal | Status |
 | --- | --- | --- |
