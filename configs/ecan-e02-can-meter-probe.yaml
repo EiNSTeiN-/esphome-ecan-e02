@@ -1,0 +1,48 @@
+substitutions:
+  can_tx_pin: GPIO10
+  can_rx_pin: GPIO9
+
+packages:
+  bare: !include ecan-e02-bare.yaml
+
+esphome:
+  build_path: build/ecan-e02-can-meter-probe
+  on_boot:
+    priority: 800
+    then:
+      - lambda: |-
+          gpio_set_direction(GPIO_NUM_10, GPIO_MODE_INPUT_OUTPUT);
+          gpio_set_level(GPIO_NUM_10, 1);
+
+binary_sensor:
+  - platform: gpio
+    id: can_rx_probe
+    name: ${friendly_name} CAN RX Meter Probe
+    internal: true
+    pin:
+      number: ${can_rx_pin}
+      inverted: false
+      mode:
+        input: true
+        pullup: false
+        pulldown: false
+
+interval:
+  - interval: 12s
+    then:
+      - lambda: |-
+          gpio_set_level(GPIO_NUM_10, 1);
+          ESP_LOGI("can_meter_probe", "TXD HIGH window start: tx_gpio=%d rx_gpio=%d rx_sensor=%u",
+                   gpio_get_level(GPIO_NUM_10), gpio_get_level(GPIO_NUM_9), id(can_rx_probe).state ? 1 : 0);
+      - delay: 5s
+      - lambda: |-
+          ESP_LOGI("can_meter_probe", "TXD HIGH window end: tx_gpio=%d rx_gpio=%d rx_sensor=%u",
+                   gpio_get_level(GPIO_NUM_10), gpio_get_level(GPIO_NUM_9), id(can_rx_probe).state ? 1 : 0);
+          gpio_set_level(GPIO_NUM_10, 0);
+          ESP_LOGI("can_meter_probe", "TXD LOW window start: tx_gpio=%d rx_gpio=%d rx_sensor=%u",
+                   gpio_get_level(GPIO_NUM_10), gpio_get_level(GPIO_NUM_9), id(can_rx_probe).state ? 1 : 0);
+      - delay: 5s
+      - lambda: |-
+          ESP_LOGI("can_meter_probe", "TXD LOW window end: tx_gpio=%d rx_gpio=%d rx_sensor=%u",
+                   gpio_get_level(GPIO_NUM_10), gpio_get_level(GPIO_NUM_9), id(can_rx_probe).state ? 1 : 0);
+          gpio_set_level(GPIO_NUM_10, 1);

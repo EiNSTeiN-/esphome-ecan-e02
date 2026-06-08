@@ -54,6 +54,19 @@ Current CAN self-test status: with a 120 ohm resistor across CANH/CANL, TWAI sta
 
 If the SIT `RS` pin is too difficult to probe directly, use `configs/ecan-e02-can-gpio-probe.yaml`. It pulses ESP32 `GPIO10` low briefly and samples ESP32 `GPIO9` without starting TWAI, so the controller cannot enter bus-off while the physical TX/RX path is checked. Current GPIO-probe status: after switching `GPIO10` to input/output mode, `GPIO10` readback is fixed and follows the commanded level (`tx_gpio=1` high, `tx_gpio=0` low). `GPIO9` still remains high during the low TX pulse, so the remaining issue is beyond ESP32 `GPIO10` output readback: check the TPT7721 output side, CAN transceiver enable/power, and RX return path.
 
+For meter-based powered probing, flash `configs/ecan-e02-can-meter-probe.yaml`. It holds `GPIO10` high for 5 seconds, then low for 5 seconds. Measure each point relative to its local ground:
+
+| Probe point | Local ground | Expected when `TXD HIGH` | Expected when `TXD LOW` |
+| --- | --- | --- | --- |
+| TPT7721 pin 7 `IN1` | TPT7721 pin 5 `GNDB` | ESP-side 3.3 V | 0 V |
+| TPT7721 pin 2 `OUT1` | TPT7721 pin 4 `GNDA` | CAN-side logic high | CAN-side logic low |
+| SIT pin 1 `D/TXD` | SIT pin 2 `GND` | CAN-side logic high | CAN-side logic low |
+| SIT pin 4 `R/RXD` | SIT pin 2 `GND` | CAN-side logic high | Should go low if the transceiver and terminated bus are responding to dominant TX |
+| TPT7721 pin 3 `IN2` | TPT7721 pin 4 `GNDA` | Same as SIT `R/RXD` | Same as SIT `R/RXD` |
+| TPT7721 pin 6 `OUT2` | TPT7721 pin 5 `GNDB` | ESP-side logic high | Should go low if the RX return channel is working |
+
+If TPT7721 pin 7 toggles but pin 2 does not, suspect TPT7721 CAN-side power or the isolator. If pin 2 and SIT pin 1 toggle but SIT pin 4 does not, focus on SIT power, `RS`, CANH/CANL, and termination. If SIT pin 4 toggles but TPT7721 pin 6 does not, focus on the RX isolator channel.
+
 Observed CAN protection: board designator `D2` is a 3-pin SOT-23 part marked `EL24`, which matches ST `ESDCAN24-2BLY`, a dual-line CAN TVS protector. This device should be on CANH/CANL and CAN-side ground. If an apparent SIT `RS` trace reaches `D2`, recheck the SIT pin orientation because adjacent SIT pins 6 and 7 are the expected CANL/CANH pins.
 
 Observed local power IC: a 5-pin `M 5233` package is confirmed as Microchip/Micrel MIC5233. Its input and enable are tied high, and its output supplies SIT `VCC` plus TPT7721 `VCCA` on the CAN/transceiver side.
