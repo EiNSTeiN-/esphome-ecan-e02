@@ -12,10 +12,11 @@ esphome:
 # - RTL8201 MDC -> GPIO18
 # - RTL8201 MDIO -> GPIO5
 # - RTL8201 PHYRSTB -> GPIO14, active-low reset
+# - RTL8201 TXC/REF_CLK -> GPIO0, with CLK_CTL apparently left floating on unpopulated pads
 # - Fixed RMII data/control pins match the classic ESP32 EMAC mapping
 #
-# Do not flash this Ethernet config until RTL8201 TXC/REF_CLK has been traced.
-# The GPIO0 CLK_EXT_IN entry below is the likely ESP32 layout, not yet confirmed.
+# The GPIO0 CLK_EXT_IN entry below matches the traced REF_CLK path. GPIO0 is a
+# boot strap pin, but this board has booted normally with the PHY present.
 # GPIO16/GPIO17 are ESP32-U4WD in-package flash pins and are not available for
 # RMII clock output on this board.
 ethernet:

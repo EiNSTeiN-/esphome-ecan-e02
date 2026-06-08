@@ -145,8 +145,10 @@ Observed ECAN-E02 RTL8201 traces:
 | TXD0 | - | 38 | GPIO19 | Confirmed fixed RMII signal. |
 | TXD1 | - | 39 | GPIO22 | Confirmed fixed RMII signal. |
 | CRS_DV | 26 | 16 | GPIO27 | Confirmed fixed RMII signal. |
-| TXC / REF_CLK | 15 | Trace next | Trace next | Required before enabling Ethernet. |
-| RXD3 / CLK_CTL | 12 | Trace next | Trace next | Clock-mode strap; helps determine whether REF_CLK is input or output. |
+| TXC / REF_CLK | 15 | 23 | GPIO0 | Confirmed. PHY clock output feeds ESP32 `CLK_EXT_IN`. |
+| RXD3 / CLK_CTL | 12 | Unpopulated pads | Not connected to ESP32 | Floating/unpopulated strap should use the RTL8201F internal pulldown, selecting REF_CLK output mode. |
+| LED0 / PHYAD0 / PMEB | 24 | Trace next | Trace next | PHY address bit 0 and LED strap on RTL8201F QFN-32. |
+| LED1 / PHYAD1 | 25 | Trace next | Trace next | PHY address bit 1 and LED strap on RTL8201F QFN-32. |
 
 The MDIO scanner confirms a live RTL8201-compatible PHY on the traced management pins:
 
@@ -158,7 +160,7 @@ MDIO PHY addr=1 bmcr=0x1000 bmsr=0x7849 phy_id=0x001C:0xC816
 
 Use `phy_addr: 0` for the first ESPHome Ethernet attempt. Address 1 currently reads as the same PHY as address 0, so treat it as an alias or strap behavior until the PHY address pins are traced.
 
-Start with the example in `configs/ecan-e02-ethernet-rtl8201.yaml.example` only after confirming the REF_CLK path. MDC, MDIO, reset, and the fixed RMII data/control pins are now traced; the remaining bring-up blocker is the clock path.
+The REF_CLK path now matches the checked-in ESPHome Ethernet skeleton: RTL8201F pin 15 drives ESP32 `GPIO0` in `CLK_EXT_IN` mode. RTL8201F pin 12 appears to go only to unpopulated pads; if left floating, the chip's internal pulldown selects REF_CLK output mode.
 
 GPIO0 is also a boot strap pin. If the board uses GPIO0 as RMII REF_CLK input, the PHY clock circuit must not prevent normal boot mode.
 
@@ -184,9 +186,8 @@ For an RTL8201F QFN-32, useful remaining physical trace points are:
 
 | RTL8201F pin | Signal | Trace target |
 | --- | --- | --- |
-| 15 | TXC / REF_CLK | ESP32 `GPIO0` for `CLK_EXT_IN`, or an external/PHY clock circuit. GPIO16/GPIO17 are not available on this ESP32-U4WD board. |
-| 12 | RXD3 / CLK_CTL | Strap: high means REF_CLK input mode; low means REF_CLK output mode. |
-| PHYAD strap pins | PHY address | Confirm why addresses 0 and 1 both respond. |
+| 24 | LED0 / PHYAD0 / PMEB | Confirm pull direction and whether it is routed through an LED/resistor network. |
+| 25 | LED1 / PHYAD1 | Confirm pull direction and whether it is routed through an LED/resistor network. |
 
 If the package is RTL8201FL/FN 48-pin instead, use the datasheet pin table rather than the QFN-32 pin numbers above.
 

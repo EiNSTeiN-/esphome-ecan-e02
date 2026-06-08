@@ -77,7 +77,7 @@ The bare firmware enables only serial logging and the local `ecan_e02` component
 - `configs/can-peer-esp32-s3-zero-vp230.yaml`: ESP32-S3-Zero plus VP230 external CAN peer
 - `configs/ecan-e02-ethernet-mdio-scan.yaml`: bit-banged MDC/MDIO scanner for traced RTL8201 management pins
 - `configs/ecan-e02-can-listen.yaml.example`: ESP32 TWAI/CAN listen-only skeleton
-- `configs/ecan-e02-ethernet-rtl8201.yaml.example`: RTL8201 RMII skeleton with confirmed MDC/MDIO and clock path still pending
+- `configs/ecan-e02-ethernet-rtl8201.yaml.example`: RTL8201 RMII skeleton with confirmed MDC/MDIO, reset, REF_CLK, and fixed RMII data/control pins
 - `scripts/ch343-driver.sh`: fetch/build/load the WCH CH343-family vendor driver
 - `scripts/serial-reset-log.sh`: serial log capture for direct DTR/RTS reset wiring
 - `docs/pin-tracing.md`: physical tracing checklist
@@ -89,7 +89,7 @@ The bare firmware enables only serial logging and the local `ecan_e02` component
 1. Flash `configs/ecan-e02-bare.yaml` and confirm serial logs show the `ecan_e02` component.
 2. Use `configs/ecan-e02-can-self-test.yaml` with the board powered from its intended 12 V input to verify the internal CAN path.
 3. Use `configs/ecan-e02-can-normal-tx.yaml` and the ESP32-S3-Zero VP230 peer to verify CANH/CANL with an external node.
-4. Trace RTL8201 `TXC/REF_CLK` and `RXD3/CLK_CTL`; MDC, MDIO, reset, and the fixed RMII data/control pins are already confirmed.
+4. Trace RTL8201 PHY address straps on pins 24 and 25; MDC, MDIO, reset, REF_CLK, and the fixed RMII data/control pins are already confirmed.
 5. Copy an example YAML to a real config, fill in confirmed pins, and validate with `./scripts/esphome.sh config`.
 
 For the ESP32-U4WD target, GPIO16/GPIO17 are connected to the in-package flash. Do not use them for RTL8201 MDC/MDIO, RMII clock output, reset, power-enable, or passive GPIO probing.
@@ -140,4 +140,4 @@ The ESP32 classic RMII data pins are fixed in ESPHome/ESP-IDF:
 | GPIO26 | RXD1 |
 | GPIO27 | CRS_DV |
 
-The remaining Ethernet trace targets are `TXC/REF_CLK`, the `RXD3/CLK_CTL` clock-mode strap, and the PHY address straps. On this ESP32-U4WD board, expect `REF_CLK` to be an input on GPIO0 or an external clock circuit rather than an ESP32 clock output on GPIO16/GPIO17.
+The remaining Ethernet trace targets are the PHY address straps on RTL8201F pins 24 and 25. The clock path is confirmed as RTL8201F `TXC/REF_CLK` output into ESP32 `GPIO0` using `CLK_EXT_IN`.
