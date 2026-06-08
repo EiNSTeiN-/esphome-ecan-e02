@@ -1,0 +1,67 @@
+substitutions:
+  name: can-peer-s3-zero
+  friendly_name: CAN Peer S3 Zero
+  can_tx_pin: GPIO4
+  can_rx_pin: GPIO5
+  can_bit_rate: 500KBPS
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  comment: ESP32-S3-Zero plus VP230 CAN peer for ECAN-E02 bench testing
+  project:
+    name: local.can_peer_s3_zero
+    version: "0.1.0"
+  min_version: 2026.5.0
+  build_path: build/can-peer-s3-zero-vp230
+
+esp32:
+  board: esp32-s3-devkitc-1
+  variant: ESP32S3
+  flash_size: 4MB
+  framework:
+    type: esp-idf
+
+logger:
+  level: DEBUG
+  hardware_uart: USB_SERIAL_JTAG
+
+canbus:
+  - platform: esp32_can
+    id: peer_can
+    tx_pin: ${can_tx_pin}
+    rx_pin: ${can_rx_pin}
+    can_id: 0x11
+    bit_rate: ${can_bit_rate}
+    mode: NORMAL
+    rx_queue_len: 20
+    tx_queue_len: 20
+    tx_enqueue_timeout: 100ms
+    on_frame:
+      - can_id: 0x000
+        can_id_mask: 0x000
+        then:
+          - lambda: |-
+              std::string bytes;
+              char item[4];
+              for (auto b : x) {
+                snprintf(item, sizeof(item), "%02X", b);
+                if (!bytes.empty()) {
+                  bytes += " ";
+                }
+                bytes += item;
+              }
+              ESP_LOGI("can_peer", "rx id=0x%08X rtr=%s len=%u data=%s",
+                       static_cast<unsigned>(can_id),
+                       remote_transmission_request ? "true" : "false",
+                       static_cast<unsigned>(x.size()),
+                       bytes.c_str());
+
+interval:
+  - interval: 5s
+    then:
+      - logger.log: "Sending CAN peer heartbeat id=0x711"
+      - canbus.send:
+          canbus_id: peer_can
+          can_id: 0x711
+          data: [0x53, 0x33, 0x50, 0x45, 0x45, 0x52]

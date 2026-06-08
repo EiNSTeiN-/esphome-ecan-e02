@@ -70,14 +70,17 @@ The bare firmware enables only serial logging and the local `ecan_e02` component
 - `configs/ecan-e02-gpio-probe.yaml.example`: passive GPIO input sampler for suspected pins
 - `configs/ecan-e02-led-test.yaml`: status LED sequencer for traced LINK, ERR, and CAN LEDs
 - `configs/ecan-e02-can-listen.yaml`: traced CAN listen-only config, `GPIO10` TX and `GPIO9` RX through the TPT7721 isolator
+- `configs/ecan-e02-can-normal-tx.yaml`: normal-mode periodic CAN transmitter for testing against an external peer
 - `configs/ecan-e02-can-self-test.yaml`: no-peer ESP32 TWAI self-reception test for the traced CAN pins
 - `configs/ecan-e02-can-gpio-probe.yaml`: short-pulse GPIO-level CAN TX/RX path probe that does not use TWAI
 - `configs/ecan-e02-can-meter-probe.yaml`: meter-friendly CAN TX/RX path probe with 5 second high/low windows
+- `configs/can-peer-esp32-s3-zero-vp230.yaml`: ESP32-S3-Zero plus VP230 external CAN peer
 - `configs/ecan-e02-can-listen.yaml.example`: ESP32 TWAI/CAN listen-only skeleton
 - `configs/ecan-e02-ethernet-rtl8201.yaml.example`: likely RTL8201 RMII skeleton
 - `scripts/ch343-driver.sh`: fetch/build/load the WCH CH343-family vendor driver
 - `scripts/serial-reset-log.sh`: serial log capture for direct DTR/RTS reset wiring
 - `docs/pin-tracing.md`: physical tracing checklist
+- `docs/external-can-peer.md`: VP230 and ESP32-S3-Zero wiring/test notes
 - `docs/usb-serial.md`: CH343, `cdc_acm`, `ch341`, and Espressif native USB notes
 
 ## Expected next steps

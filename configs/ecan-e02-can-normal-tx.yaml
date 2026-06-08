@@ -1,0 +1,50 @@
+substitutions:
+  can_tx_pin: GPIO10
+  can_rx_pin: GPIO9
+  can_bit_rate: 500KBPS
+
+packages:
+  bare: !include ecan-e02-bare.yaml
+
+esphome:
+  build_path: build/ecan-e02-can-normal-tx
+
+canbus:
+  - platform: esp32_can
+    id: can0
+    tx_pin: ${can_tx_pin}
+    rx_pin: ${can_rx_pin}
+    can_id: 0x02
+    bit_rate: ${can_bit_rate}
+    mode: NORMAL
+    rx_queue_len: 20
+    tx_queue_len: 20
+    tx_enqueue_timeout: 100ms
+    on_frame:
+      - can_id: 0x000
+        can_id_mask: 0x000
+        then:
+          - lambda: |-
+              std::string bytes;
+              char item[4];
+              for (auto b : x) {
+                snprintf(item, sizeof(item), "%02X", b);
+                if (!bytes.empty()) {
+                  bytes += " ";
+                }
+                bytes += item;
+              }
+              ESP_LOGI("ecan_can", "rx id=0x%08X rtr=%s len=%u data=%s",
+                       static_cast<unsigned>(can_id),
+                       remote_transmission_request ? "true" : "false",
+                       static_cast<unsigned>(x.size()),
+                       bytes.c_str());
+
+interval:
+  - interval: 2s
+    then:
+      - logger.log: "Sending ECAN-E02 CAN test frame id=0x602"
+      - canbus.send:
+          canbus_id: can0
+          can_id: 0x602
+          data: [0x45, 0x43, 0x41, 0x4E, 0x54, 0x58]
