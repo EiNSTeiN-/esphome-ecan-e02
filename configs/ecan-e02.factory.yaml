@@ -4,10 +4,8 @@ substitutions:
   name_add_mac_suffix: "true"
 
 packages:
-  ecan_e02: !include ../packages/ecan-e02-base.yaml
+  ecan_e02: github://EiNSTeiN-/esphome-ecan-e02/packages/ecan-e02-base.yaml@main
 
 external_components:
-  - source:
-      type: local
-      path: ../components
+  - source: github://EiNSTeiN-/esphome-ecan-e02@main
     components: [ecan_e02]

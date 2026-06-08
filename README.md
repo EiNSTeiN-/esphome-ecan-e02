@@ -2,7 +2,7 @@
 
 This repository contains ESPHome firmware for the inexpensive ECAN-E02 board, turning it into an Ethernet-connected CAN monitor for Home Assistant.
 
-The target board uses an ESP32-U4WD, an RTL8201 Ethernet PHY, and an isolated CAN transceiver. The confirmed firmware pinout is already encoded in [configs/ecan-e02.yaml](configs/ecan-e02.yaml).
+The target board uses an ESP32-U4WD, an RTL8201 Ethernet PHY, and an isolated CAN transceiver. The confirmed firmware pinout is encoded in [packages/ecan-e02-base.yaml](packages/ecan-e02-base.yaml) and exposed through the user-facing configs in [configs/](configs/).
 
 ## Current Status
 
@@ -24,7 +24,7 @@ The default firmware is conservative: CAN starts in `LISTENONLY` mode, so it can
 - CANH/CANL connected to the bus you want to monitor.
 - A Linux machine with `git`, `make`, and `uv`/`uvx` available.
 
-For Linux USB serial support, the in-kernel `ch341` driver is usually enough for WCH CH34x adapters. Some CH343 adapters work better with WCH's vendor driver; this repo includes `scripts/ch343-driver.sh` for building/loading that driver when needed.
+For Linux USB serial support, the in-kernel `ch341` driver is usually enough for WCH CH34x adapters. Some CH343 adapters work better with WCH's vendor driver; this repo includes [scripts/ch343-driver.sh](scripts/ch343-driver.sh) for building/loading that driver when needed.
 
 ## Quick Start
 
@@ -67,9 +67,21 @@ make logs PORT=/dev/ttyACM0
 
 Successful boot logs should show the ESP32 starting, CAN configured in listen-only mode, and Ethernet starting with RTL8201 `phy_addr: 0`.
 
-## Home Assistant
+## Home Assistant and ESPHome Builder
 
-After Ethernet obtains an IP address, Home Assistant should be able to discover the node through ESPHome/mDNS as `ecan-e02.local`.
+The firmware includes ESPHome project metadata and a `dashboard_import` URL:
+
+```yaml
+dashboard_import:
+  package_import_url: github://EiNSTeiN-/esphome-ecan-e02/configs/ecan-e02.factory.yaml@main
+  import_full_config: false
+```
+
+After Ethernet obtains an IP address, Home Assistant should discover the device through ESPHome/mDNS. The firmware uses `name_add_mac_suffix: true`, so the hostname will be similar to `ecan-e02-1a2b3c.local`, not plain `ecan-e02.local`.
+
+The ESPHome Builder dashboard should show the device as adoptable. Taking control imports the public factory config from this repository, which in turn loads the reusable package from [packages/ecan-e02-base.yaml](packages/ecan-e02-base.yaml). Users can then override substitutions such as CAN bit rate in their own ESPHome YAML while still receiving upstream package updates.
+
+If discovery does not appear, add the ESPHome integration manually in Home Assistant using the device IP address or the MAC-suffixed `.local` hostname.
 
 The firmware exposes:
 
@@ -83,11 +95,15 @@ The firmware exposes:
 
 Many diagnostic entities are disabled by default in Home Assistant to keep the device quiet. Enable them from the ESPHome device page when you need them.
 
-The current config leaves API encryption and OTA passwords unset for bench bring-up. Add ESPHome API encryption and OTA credentials before putting the device on an untrusted network.
+The public bring-up firmware leaves API encryption and OTA passwords unset so first-time adoption works without per-user secrets baked into the firmware. After adoption, add ESPHome API encryption and OTA credentials in your own ESPHome config before putting the device on an untrusted network.
 
 ## Configuration
 
-Most normal changes are substitutions at the top of [configs/ecan-e02.yaml](configs/ecan-e02.yaml):
+The normal local build config is [configs/ecan-e02.yaml](configs/ecan-e02.yaml). It uses the local component source from [components/ecan_e02/](components/ecan_e02/) so development changes can be compiled immediately.
+
+The public adoption config is [configs/ecan-e02.factory.yaml](configs/ecan-e02.factory.yaml). It fetches both the reusable package and the `ecan_e02` external component from GitHub, so ESPHome Builder can import it after this repository is public.
+
+Most normal changes are substitutions:
 
 ```yaml
 substitutions:
@@ -115,8 +131,10 @@ The board LEDs are active-low and are configured as:
 
 ## Repository Layout
 
-- [configs/ecan-e02.yaml](configs/ecan-e02.yaml): main firmware for normal use.
-- [components/ecan_e02/](components/ecan_e02/): local ESPHome helper component with board diagnostics.
+- [configs/ecan-e02.yaml](configs/ecan-e02.yaml): local development and flashing config.
+- [configs/ecan-e02.factory.yaml](configs/ecan-e02.factory.yaml): public ESPHome Builder adoption config.
+- [packages/ecan-e02-base.yaml](packages/ecan-e02-base.yaml): reusable ECAN-E02 firmware package.
+- [components/ecan_e02/](components/ecan_e02/): ESPHome helper component with board diagnostics.
 - [scripts/](scripts/): user-facing build, flash, log, USB, and driver helpers.
 - [dev/](dev/): hardware bring-up notes, debug firmware, probing configs, and development-only scripts.
 
