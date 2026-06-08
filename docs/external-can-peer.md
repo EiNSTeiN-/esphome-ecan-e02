@@ -8,16 +8,20 @@ Use `configs/can-peer-esp32-s3-zero-vp230.yaml` for the ESP32-S3-Zero.
 
 | VP230 pin | Signal | Connect to |
 | --- | --- | --- |
-| 1 | `D` / `TXD` | ESP32-S3-Zero `GPIO4` |
+| 1 | `D` / `TXD` | ESP32-S3-Zero `RX` silkscreen / `GPIO44`, configured as CAN TX |
 | 2 | `GND` | ESP32-S3-Zero `GND`; also connect to ECAN-E02 CAN-side ground if available |
 | 3 | `VCC` | ESP32-S3-Zero `3V3` |
-| 4 | `R` / `RXD` | ESP32-S3-Zero `GPIO5` |
+| 4 | `R` / `RXD` | ESP32-S3-Zero `TX` silkscreen / `GPIO43`, configured as CAN RX |
 | 5 | `VREF` | Leave open |
 | 6 | `CANL` | ECAN-E02 `CANL` |
 | 7 | `CANH` | ECAN-E02 `CANH` |
 | 8 | `RS` | ESP32-S3-Zero `GND` |
 
 Do not power the VP230 from 5 V. It is a 3.3 V CAN transceiver.
+
+The ESP32-S3-Zero `TX`/`RX` pads are only being used as GPIOs here. The test firmware logs over native USB serial/JTAG, so the default UART0 pins are available for the CAN controller. Do not wire this as UART traffic; the VP230 logic pins are CAN controller TX/RX signals.
+
+If a VP230 breakout labels these pins from the controller's point of view instead of the transceiver's point of view, trust the IC pin function over the silkscreen: VP230/SN65HVD230 pin 1 `D`/`TXD` goes to ESP CAN TX, and pin 4 `R`/`RXD` goes to ESP CAN RX.
 
 Make sure the ECAN-E02 is powered in the same way it will be during the test. The isolated CAN-side regulator must be on, otherwise the external peer can be wired correctly and still see no valid peer on CANH/CANL.
 

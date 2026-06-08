@@ -1,8 +1,11 @@
 substitutions:
   name: can-peer-s3-zero
   friendly_name: CAN Peer S3 Zero
-  can_tx_pin: GPIO4
-  can_rx_pin: GPIO5
+  # Waveshare ESP32-S3-Zero silkscreen:
+  #   RX = GPIO44, wired to VP230 TXD/D, used here as CAN TX
+  #   TX = GPIO43, wired to VP230 RXD/R, used here as CAN RX
+  can_tx_pin: GPIO44
+  can_rx_pin: GPIO43
   can_bit_rate: 500KBPS
 
 esphome:
