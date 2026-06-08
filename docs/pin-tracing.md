@@ -30,7 +30,7 @@ Observed ECAN-E02 status LED traces:
 | ERR | 24 | GPIO4 | Use `configs/ecan-e02-led-test.yaml` for polarity testing. |
 | CAN | 36 | GPIO23 | Conflicts with the common ESP32 RMII `MDC` default, so trace Ethernet management pins before enabling RTL8201. |
 
-The LED test firmware drives LINK, ERR, then CAN for 500 ms each. If the LEDs are active-low, set `status_led_inverted: "true"` in `configs/ecan-e02-led-test.yaml`.
+The LED test firmware drives LINK, ERR, then CAN for 500 ms each. The LEDs appear to be active-low: with `status_led_inverted: "false"`, the earlier test made the selected LED blink off rather than on. `configs/ecan-e02-led-test.yaml` therefore uses `status_led_inverted: "true"` so each log label should match a visible LED-on pulse.
 
 ## CAN transceiver
 
