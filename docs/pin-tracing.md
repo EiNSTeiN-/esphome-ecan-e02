@@ -65,7 +65,9 @@ For meter-based powered probing, flash `configs/ecan-e02-can-meter-probe.yaml`. 
 | TPT7721 pin 3 `IN2` | TPT7721 pin 4 `GNDA` | Same as SIT `R/RXD` | Same as SIT `R/RXD` |
 | TPT7721 pin 6 `OUT2` | TPT7721 pin 5 `GNDB` | ESP-side logic high | Should go low if the RX return channel is working |
 
-If TPT7721 pin 7 toggles but pin 2 does not, suspect TPT7721 CAN-side power or the isolator. If pin 2 and SIT pin 1 toggle but SIT pin 4 does not, focus on SIT power, `RS`, CANH/CANL, and termination. If SIT pin 4 toggles but TPT7721 pin 6 does not, focus on the RX isolator channel.
+If TPT7721 pin 7 toggles but pin 2 does not, suspect TPT7721 CAN-side power or the isolator. If pin 2 and SIT pin 1 toggle but SIT pin 4 does not, focus on SIT power, CANH/CANL, and termination. If SIT pin 4 toggles but TPT7721 pin 6 does not, focus on the RX isolator channel.
+
+SIT pin 8 `RS` has about 180 mohm continuity to SIT pin 2 `GND`, so the transceiver should be in normal/high-speed mode rather than standby through `RS`.
 
 Observed CAN protection: board designator `D2` is a 3-pin SOT-23 part marked `EL24`, which matches ST `ESDCAN24-2BLY`, a dual-line CAN TVS protector. This device should be on CANH/CANL and CAN-side ground. If an apparent SIT `RS` trace reaches `D2`, recheck the SIT pin orientation because adjacent SIT pins 6 and 7 are the expected CANL/CANH pins.
 
@@ -106,7 +108,7 @@ Trace these transceiver pins:
 | --- | --- | --- |
 | TXD | ESP32 package pin 29 / GPIO10 through TPT7721 | Confirmed path: ESP32 `GPIO10` -> TPT7721 `IN1` -> TPT7721 `OUT1` -> SIT `D/TXD`. |
 | RXD | ESP32 package pin 28 / GPIO9 through TPT7721 | Confirmed path: SIT `R/RXD` -> TPT7721 `IN2` -> TPT7721 `OUT2` -> ESP32 `GPIO9`. |
-| RS | Resistor, destination/value not yet confirmed | If this is an HVD233-compatible transceiver, a resistor to ground selects slope-control mode; high level selects standby. Measure powered `RS` voltage and trace the resistor's other end. |
+| RS | SIT pin 2 `GND` | About 180 mohm to ground. For an HVD233-compatible transceiver, this should select normal/high-speed mode rather than standby. |
 | CANH/CANL | terminal/connector and D2/EL24 TVS | Confirm connector orientation and SIT pin orientation. |
 | VCC/VIO | 3.3 V or 5 V rail | Determines whether the logic side is ESP32-safe. |
 | GND | board ground | Confirm common ground. |
