@@ -9,6 +9,7 @@ For normal flashing and Home Assistant use, start with the top-level [README.md]
 - [configs/](configs/): bare firmware, CAN probes, LED tests, MDIO scanner, and external CAN peer configs.
 - [datasheets/](datasheets/README.md): local PDFs for confirmed ICs, likely ICs, and bench hardware.
 - [docs/pin-tracing.md](docs/pin-tracing.md): confirmed ESP32, CAN, LED, and RTL8201 pin tracing notes.
+- [manuals/](manuals/README.md): local vendor manuals used for factory-firmware behavior checks.
 - [docs/usb-serial.md](docs/usb-serial.md): CH343/CH34x and bootloader serial notes.
 - [docs/external-can-peer.md](docs/external-can-peer.md): ESP32-S3-Zero plus VP230 external CAN peer test setup.
 - [scripts/flash-bare.sh](scripts/flash-bare.sh): flash the bare serial-only recovery firmware.
