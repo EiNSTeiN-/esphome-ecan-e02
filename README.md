@@ -125,13 +125,6 @@ Ebyte configuration utility method:
 
 The configuration tool is linked from the Ebyte product page's file downloads area.
 
-Web page method:
-
-1. In a browser, open the board IP address.
-2. Log in with the configured username and password. The manual lists the default username and password as `admin` / `admin`.
-3. Select the firmware file.
-4. Click upgrade.
-
 The vendor manual is saved locally as [dev/manuals/ECAN-E02-UserManual-EN.pdf](dev/manuals/ECAN-E02-UserManual-EN.pdf). The English product page is [Ebyte ECAN-E02](https://www.cdebyte.com/products/ECAN-E02), and the official English manual download is <https://www.cdebyte.com/pdf-down.aspx?id=3954>.
 
 ## Quick Start
