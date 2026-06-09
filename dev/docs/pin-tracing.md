@@ -1,4 +1,4 @@
-# ECAN-E02 pin tracing checklist
+# Ebyte ECAN-E02 pin tracing checklist
 
 Use this while the board is unpowered unless a step explicitly says to boot the firmware. Continuity mode is usually enough for the first pass.
 
@@ -22,7 +22,7 @@ If those lines are directly wired during bench bring-up, use `./dev/scripts/seri
 
 ## Status LEDs
 
-Observed ECAN-E02 status LED traces:
+Observed Ebyte ECAN-E02 status LED traces:
 
 | LED label | ESP32 package pin | ESP32 GPIO | Notes |
 | --- | --- | --- | --- |
@@ -38,7 +38,7 @@ The main firmware in `configs/ecan-e02.yaml` uses the same active-low polarity. 
 
 Find the CAN transceiver package first. Common markings are SN65HVD230, TJA1050, TJA1051, MCP2562, VP230, or similar.
 
-Observed ECAN-E02 CAN path:
+Observed Ebyte ECAN-E02 CAN path:
 
 ```text
 ESP32 package pin 29 / GPIO10 -> TPT7721 IN1
@@ -52,7 +52,7 @@ Unpowered continuity checks confirm TPT7721 `pin 7 = IN1` connects only to ESP32
 
 The SIT65HVD233-style transceiver `LBK` pin is tied to ground, so hardware transceiver loopback is disabled. Without another CAN node, use `dev/configs/ecan-e02-can-self-test.yaml` for an ESP32 TWAI no-ACK self-reception test. That verifies the ESP32 TWAI peripheral and GPIO routing, but it does not prove the CANH/CANL physical bus path.
 
-Current CAN self-test status: with the ECAN-E02 powered from its intended 12 V supply input and a 120 ohm resistor across CANH/CANL, `dev/configs/ecan-e02-can-self-test.yaml` passes repeatedly on `GPIO10` TX and `GPIO9` RX at `500KBPS`. The self-test firmware logs `CAN self-test PASS` frames with `id=0x321`.
+Current CAN self-test status: with the Ebyte ECAN-E02 powered from its intended 12 V supply input and a 120 ohm resistor across CANH/CANL, `dev/configs/ecan-e02-can-self-test.yaml` passes repeatedly on `GPIO10` TX and `GPIO9` RX at `500KBPS`. The self-test firmware logs `CAN self-test PASS` frames with `id=0x321`.
 
 Do not treat ESP32-side 3.3 V test-pad power as sufficient for CAN validation. The CAN/transceiver side is powered through the board power path, including the isolated DC/DC module and MIC5233 rail. If only the ESP32 side is powered, the CAN side may be unpowered and TWAI/CAN results can look like a broken RX return path.
 
@@ -134,7 +134,7 @@ Classic ESP32 RMII has fixed data pins:
 | GPIO26 | RXD1 |
 | GPIO27 | CRS_DV |
 
-Observed ECAN-E02 RTL8201 traces:
+Observed Ebyte ECAN-E02 RTL8201 traces:
 
 | RTL8201 signal | RTL8201 pin | ESP32 package pin | ESP32 GPIO | Status |
 | --- | --- | --- | --- | --- |
@@ -168,7 +168,7 @@ GPIO0 is also a boot strap pin. If the board uses GPIO0 as RMII REF_CLK input, t
 
 Use `dev/configs/ecan-e02-ethernet-mdio-scan.yaml` to verify traced MDC/MDIO candidates before enabling full Ethernet. The scanner bit-bangs IEEE 802.3 Clause 22 management reads and logs PHY ID candidates across addresses 0 through 31. It does not enable the ESP32 Ethernet MAC or RMII data pins.
 
-The checked-in scan substitutions use the confirmed ECAN-E02 management pins:
+The checked-in scan substitutions use the confirmed Ebyte ECAN-E02 management pins:
 
 ```yaml
 mdc_pin: GPIO18

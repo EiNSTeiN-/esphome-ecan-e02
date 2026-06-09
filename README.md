@@ -1,6 +1,8 @@
-# ECAN-E02 ESPHome CAN-to-Ethernet firmware
+# Ebyte ECAN-E02 ESPHome CAN-to-Ethernet firmware
 
-This repository contains ESPHome firmware for the inexpensive ECAN-E02 board, turning it into an Ethernet-connected CAN monitor for Home Assistant.
+This repository contains ESPHome firmware for the inexpensive Ebyte ECAN-E02 board, turning it into an Ethernet-connected CAN monitor for Home Assistant.
+
+Vendor product page: [Ebyte ECAN-E02](https://www.cdebyte.com/products/ECAN-E02). The board can likely also be purchased through marketplace listings on AliExpress or Amazon.
 
 The target board uses an ESP32-U4WD, an RTL8201 Ethernet PHY, and an isolated CAN transceiver. The confirmed firmware pinout is encoded in [packages/ecan-e02-base.yaml](packages/ecan-e02-base.yaml) and exposed through the user-facing configs in [configs/](configs/).
 
@@ -17,7 +19,7 @@ The default firmware is conservative: CAN starts in `LISTENONLY` mode, so it can
 
 ## What You Need
 
-- ECAN-E02 board.
+- Ebyte ECAN-E02 board.
 - 12 V power supply connected to the board power input. USB-only power may not power the isolated CAN side.
 - USB-to-serial adapter for flashing. A CH343/CH34x adapter works.
 - Ethernet cable connected to a network with DHCP.
@@ -28,11 +30,11 @@ For Linux USB serial support, the in-kernel `ch341` driver is usually enough for
 
 ## Flashing using CH343 USB-TTL
 
-The ECAN-E02 does not expose USB directly. To flash it, open the plastic enclosure and solder temporary wires to the programming pads on the underside of the board.
+The Ebyte ECAN-E02 does not expose USB directly. To flash it, open the plastic enclosure and solder temporary wires to the programming pads on the underside of the board.
 
 The pads are labeled:
 
-| ECAN-E02 pad | CH343 USB-TTL connection |
+| Ebyte ECAN-E02 pad | CH343 USB-TTL connection |
 | --- | --- |
 | `3V3` | Adapter `3V3`, not `5V` |
 | `GND` | Adapter `GND` |
@@ -50,7 +52,7 @@ The `RST` and `BOOT` wires are optional. Without them, put the ESP32 into the se
 3. Release `BOOT`.
 4. Run the flash command.
 
-For normal firmware operation and CAN validation, power the ECAN-E02 from its 12 V input. USB-TTL power alone may be enough for flashing the ESP32 side, but it does not power the isolated CAN side.
+For normal firmware operation and CAN validation, power the Ebyte ECAN-E02 from its 12 V input. USB-TTL power alone may be enough for flashing the ESP32 side, but it does not power the isolated CAN side.
 
 ## Quick Start
 
@@ -134,7 +136,7 @@ Most normal changes are substitutions:
 ```yaml
 substitutions:
   name: ecan-e02
-  friendly_name: ECAN E02
+  friendly_name: Ebyte ECAN E02
   can_bit_rate: 500KBPS
   can_mode: LISTENONLY
 ```
@@ -159,11 +161,11 @@ The board LEDs are active-low and are configured as:
 
 - [configs/ecan-e02.yaml](configs/ecan-e02.yaml): local development and flashing config.
 - [configs/ecan-e02.factory.yaml](configs/ecan-e02.factory.yaml): public ESPHome Builder adoption config.
-- [packages/ecan-e02-base.yaml](packages/ecan-e02-base.yaml): reusable ECAN-E02 firmware package.
+- [packages/ecan-e02-base.yaml](packages/ecan-e02-base.yaml): reusable Ebyte ECAN-E02 firmware package.
 - [components/ecan_e02/](components/ecan_e02/): ESPHome helper component with board diagnostics.
 - [scripts/](scripts/): user-facing build, flash, log, USB, and driver helpers.
 - [dev/](dev/): hardware bring-up notes, debug firmware, probing configs, and development-only scripts.
 
 ## Development Notes
 
-The ECAN-E02 pinout and bring-up history live in [dev/README.md](dev/README.md). Those files are useful if you are tracing a board variant, debugging the USB adapter, checking CAN electrically, or validating the RTL8201 PHY. Normal users should start with [configs/ecan-e02.yaml](configs/ecan-e02.yaml).
+The Ebyte ECAN-E02 pinout and bring-up history live in [dev/README.md](dev/README.md). Those files are useful if you are tracing a board variant, debugging the USB adapter, checking CAN electrically, or validating the RTL8201 PHY. Normal users should start with [configs/ecan-e02.yaml](configs/ecan-e02.yaml).

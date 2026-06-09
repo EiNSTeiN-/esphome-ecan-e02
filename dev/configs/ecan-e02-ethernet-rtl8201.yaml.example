@@ -1,6 +1,6 @@
 substitutions:
   name: ecan-e02-ethernet
-  friendly_name: ECAN E02 Ethernet
+  friendly_name: Ebyte ECAN E02 Ethernet
 
 packages:
   bare: !include ecan-e02-bare.yaml
@@ -8,7 +8,7 @@ packages:
 esphome:
   build_path: build/ecan-e02-ethernet-rtl8201
 
-# ECAN-E02 confirmed so far:
+# Ebyte ECAN-E02 confirmed so far:
 # - RTL8201 MDC -> GPIO18
 # - RTL8201 MDIO -> GPIO5
 # - RTL8201 PHYRSTB -> GPIO14, active-low reset

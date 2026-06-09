@@ -11,7 +11,7 @@ substitutions:
 esphome:
   name: ${name}
   friendly_name: ${friendly_name}
-  comment: ESP32-S3-Zero plus VP230 CAN peer for ECAN-E02 bench testing
+  comment: ESP32-S3-Zero plus VP230 CAN peer for Ebyte ECAN-E02 bench testing
   project:
     name: local.can_peer_s3_zero
     version: "0.1.0"

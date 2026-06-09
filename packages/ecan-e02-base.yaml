@@ -1,12 +1,12 @@
 substitutions:
   name: ecan-e02
-  friendly_name: ECAN E02
+  friendly_name: Ebyte ECAN E02
   name_add_mac_suffix: "true"
   ecan_e02_project_name: einstein.ecan_e02
   ecan_e02_project_version: "0.2.0"
   ecan_e02_import_url: github://EiNSTeiN-/esphome-ecan-e02/configs/ecan-e02.factory.yaml@main
 
-  # Confirmed ECAN-E02 status LEDs. They are active-low.
+  # Confirmed Ebyte ECAN-E02 status LEDs. They are active-low.
   link_led_pin: GPIO2
   err_led_pin: GPIO4
   can_led_pin: GPIO23
@@ -30,7 +30,7 @@ esphome:
   name: ${name}
   friendly_name: ${friendly_name}
   name_add_mac_suffix: ${name_add_mac_suffix}
-  comment: "ECAN-E02 ESP32-U4WD Ethernet/CAN firmware"
+  comment: "Ebyte ECAN-E02 ESP32-U4WD Ethernet/CAN firmware"
   project:
     name: "${ecan_e02_project_name}"
     version: "${ecan_e02_project_version}"

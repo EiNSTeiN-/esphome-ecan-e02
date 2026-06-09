@@ -184,7 +184,7 @@ void EcanE02Component::setup() {
   for (auto *pin : this->probe_pins_) {
     pin->setup();
   }
-  ESP_LOGI(TAG, "ECAN-E02 bring-up component ready");
+  ESP_LOGI(TAG, "Ebyte ECAN-E02 bring-up component ready");
 
   if (this->can_self_test_enabled_) {
     this->can_self_test_ready_ = this->setup_can_self_test_();
@@ -196,7 +196,7 @@ void EcanE02Component::setup() {
 }
 
 void EcanE02Component::dump_config() {
-  ESP_LOGCONFIG(TAG, "ECAN-E02:");
+  ESP_LOGCONFIG(TAG, "Ebyte ECAN-E02:");
 
 #ifdef USE_ESP32
   esp_chip_info_t chip_info;

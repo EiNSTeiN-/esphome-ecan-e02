@@ -1,6 +1,6 @@
 substitutions:
   name: ecan-e02-mdio-scan
-  friendly_name: ECAN E02 MDIO Scan
+  friendly_name: Ebyte ECAN E02 MDIO Scan
   mdc_pin: GPIO18
   mdio_pin: GPIO5
   reset_pin: GPIO14

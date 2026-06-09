@@ -49,7 +49,7 @@ def validate_mdio_scan_pin(value):
     pin = pins.internal_gpio_output_pin_number(value)
     if pin in MDIO_SCAN_DISALLOWED_PINS:
         raise cv.Invalid(
-            f"GPIO{pin} is reserved for flash or confirmed ECAN-E02 board functions; "
+            f"GPIO{pin} is reserved for flash or confirmed Ebyte ECAN-E02 board functions; "
             "trace the RTL8201 MDC/MDIO pins to a different ESP32 GPIO before using this scanner"
         )
     return pin

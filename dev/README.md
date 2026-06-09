@@ -1,6 +1,6 @@
-# ECAN-E02 Development Notes
+# Ebyte ECAN-E02 Development Notes
 
-This directory contains the hardware bring-up material for the ECAN-E02 ESPHome firmware. It is useful when tracing a board variant, validating the USB serial path, checking CAN electrically, or debugging the RTL8201 Ethernet PHY.
+This directory contains the hardware bring-up material for the Ebyte ECAN-E02 ESPHome firmware. It is useful when tracing a board variant, validating the USB serial path, checking CAN electrically, or debugging the RTL8201 Ethernet PHY.
 
 For normal flashing and Home Assistant use, start with the top-level [README.md](../README.md) and [configs/ecan-e02.yaml](../configs/ecan-e02.yaml).
 

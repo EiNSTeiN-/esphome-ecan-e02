@@ -1,11 +1,11 @@
 substitutions:
   name: ecan-e02
-  friendly_name: ECAN E02
+  friendly_name: Ebyte ECAN E02
 
 esphome:
   name: ${name}
   friendly_name: ${friendly_name}
-  comment: "ECAN-E02 ESP32-U4WD bare serial bring-up"
+  comment: "Ebyte ECAN-E02 ESP32-U4WD bare serial bring-up"
   project:
     name: local.ecan_e02
     version: "0.1.0"

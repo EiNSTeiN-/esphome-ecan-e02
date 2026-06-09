@@ -1,6 +1,6 @@
-# ECAN-E02 Datasheets
+# Ebyte ECAN-E02 Datasheets
 
-This directory contains local convenience copies of datasheets for confirmed ECAN-E02 ICs, likely board ICs, and bench hardware used during bring-up. The firmware build does not depend on these files; they are kept here so hardware tracing and future board-variant checks do not depend on finding the same PDFs again.
+This directory contains local convenience copies of datasheets for confirmed Ebyte ECAN-E02 ICs, likely board ICs, and bench hardware used during bring-up. The firmware build does not depend on these files; they are kept here so hardware tracing and future board-variant checks do not depend on finding the same PDFs again.
 
 Prefer official manufacturer PDFs where they are directly available. A few parts use distributor or mirror-hosted PDFs because the manufacturer page is gated, uses a JavaScript download shell, or does not expose a stable direct PDF URL.
 

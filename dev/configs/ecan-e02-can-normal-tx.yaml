@@ -43,7 +43,7 @@ canbus:
 interval:
   - interval: 2s
     then:
-      - logger.log: "Sending ECAN-E02 CAN test frame id=0x602"
+      - logger.log: "Sending Ebyte ECAN-E02 CAN test frame id=0x602"
       - canbus.send:
           canbus_id: can0
           can_id: 0x602

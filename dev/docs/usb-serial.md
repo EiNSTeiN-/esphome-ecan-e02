@@ -1,6 +1,6 @@
 # USB Serial Requirements
 
-The ECAN-E02 project flashes and logs through an external WCH CH343-family USB-UART adapter. The CH343 adapter is not part of the ECAN-E02 PCB, so USB enumeration problems usually belong to the host cable, host port, or external adapter rather than the board itself.
+The Ebyte ECAN-E02 project flashes and logs through an external WCH CH343-family USB-UART adapter. The CH343 adapter is not part of the Ebyte ECAN-E02 PCB, so USB enumeration problems usually belong to the host cable, host port, or external adapter rather than the board itself.
 
 ## Linux Requirements
 

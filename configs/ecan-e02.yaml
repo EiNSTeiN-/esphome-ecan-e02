@@ -1,6 +1,6 @@
 substitutions:
   name: ecan-e02
-  friendly_name: ECAN E02
+  friendly_name: Ebyte ECAN E02
   name_add_mac_suffix: "true"
 
 packages:
