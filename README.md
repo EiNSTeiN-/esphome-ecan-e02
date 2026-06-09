@@ -26,6 +26,32 @@ The default firmware is conservative: CAN starts in `LISTENONLY` mode, so it can
 
 For Linux USB serial support, the in-kernel `ch341` driver is usually enough for WCH CH34x adapters. Some CH343 adapters work better with WCH's vendor driver; this repo includes [scripts/ch343-driver.sh](scripts/ch343-driver.sh) for building/loading that driver when needed.
 
+## Flashing using CH343 USB-TTL
+
+The ECAN-E02 does not expose USB directly. To flash it, open the plastic enclosure and solder temporary wires to the programming pads on the underside of the board.
+
+The pads are labeled:
+
+| ECAN-E02 pad | CH343 USB-TTL connection |
+| --- | --- |
+| `3V3` | Adapter `3V3`, not `5V` |
+| `GND` | Adapter `GND` |
+| `TXD` | Adapter `RXD` |
+| `RXD` | Adapter `TXD` |
+| `RST` | Optional reset control |
+| `BOOT` | Optional bootloader control |
+
+Use a 3.3 V USB-TTL adapter. Do not connect a 5 V UART signal to the ESP32 pads.
+
+The `RST` and `BOOT` wires are optional. Without them, put the ESP32 into the serial bootloader manually with the usual ESP32 sequence:
+
+1. Hold or jumper `BOOT` to `GND`.
+2. Reset the board with `RST`, or briefly remove and restore power.
+3. Release `BOOT`.
+4. Run the flash command.
+
+For normal firmware operation and CAN validation, power the ECAN-E02 from its 12 V input. USB-TTL power alone may be enough for flashing the ESP32 side, but it does not power the isolated CAN side.
+
 ## Quick Start
 
 Clone the repository and check that ESPHome can read the main config:
