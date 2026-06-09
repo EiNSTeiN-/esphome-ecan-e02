@@ -109,24 +109,6 @@ After the backup, reset the board normally before using the factory firmware aga
 
 If reset control is not wired, briefly pull `RST` to `GND` or cycle board power instead.
 
-## Flashing using factory firmware
-
-Ebyte's user manual documents a network-port upgrade flow for the original factory firmware. This is useful if the board is still running Ebyte firmware and you have a compatible Ebyte firmware image. It is not the documented way to flash this ESPHome firmware; use the CH343 USB-TTL procedure above for ESPHome.
-
-Start with the board powered from its normal input and connected to the computer or LAN over Ethernet. Put the computer on the same subnet as the board. The manual lists the default board IP as `192.168.3.7`; for a direct connection, an address such as `192.168.3.101` should be on the same subnet.
-
-Ebyte configuration utility method:
-
-1. Open Ebyte's configuration host software.
-2. Choose the device upgrade assistant.
-3. Click search device.
-4. Select the firmware file.
-5. Click upgrade.
-
-The configuration tool is linked from the Ebyte product page's file downloads area.
-
-The vendor manual is saved locally as [dev/manuals/ECAN-E02-UserManual-EN.pdf](dev/manuals/ECAN-E02-UserManual-EN.pdf). The English product page is [Ebyte ECAN-E02](https://www.cdebyte.com/products/ECAN-E02), and the official English manual download is <https://www.cdebyte.com/pdf-down.aspx?id=3954>.
-
 ## Quick Start
 
 Clone the repository and check that ESPHome can read the main config:
