@@ -40,8 +40,8 @@ The pads are labeled:
 | `GND` | Adapter `GND` |
 | `TXD` | Adapter `RXD` |
 | `RXD` | Adapter `TXD` |
-| `RST` | Optional reset control |
-| `BOOT` | Optional bootloader control |
+| `RST` | Adapter `RTS` if available, or a jumper/button to `GND` |
+| `BOOT` | Adapter `DTR` if available, or a jumper/button to `GND` |
 
 Use a 3.3 V USB-TTL adapter. Do not connect a 5 V UART signal to the ESP32 pads.
 
@@ -53,6 +53,61 @@ The `RST` and `BOOT` wires are optional. Without them, put the ESP32 into the se
 4. Run the flash command.
 
 For normal firmware operation and CAN validation, power the Ebyte ECAN-E02 from its 12 V input. USB-TTL power alone may be enough for flashing the ESP32 side, but it does not power the isolated CAN side.
+
+### Backing up the factory firmware
+
+Before replacing the vendor firmware, make a local flash backup. This gives you a recovery image if you want to return a board to its original state. Keep the backup private unless Ebyte explicitly allows redistribution.
+
+Use a recent `esptool`; version 5.3.0 has been tested with the ESP32-U4WD/U4WDH embedded flash on this board. Older `esptool` releases may connect to the ROM bootloader but fail after uploading the flasher stub.
+
+First confirm that the adapter can reset the board and detect the embedded flash:
+
+```sh
+PORT=/dev/ttyACM0
+
+UV_CACHE_DIR=/tmp/uv-cache UV_TOOL_DIR=/tmp/uv-tools \
+  uvx --from esptool esptool \
+  --chip esp32 \
+  --port "$PORT" \
+  --baud 115200 \
+  --before default-reset \
+  --after no-reset \
+  flash-id
+```
+
+If `RST` and `BOOT` are not connected to `RTS` and `DTR`, put the board into the ESP32 bootloader manually before running the command and replace `--before default-reset` with `--before no-reset`.
+
+Expected output should identify an ESP32-U4WD or ESP32-U4WDH and detect a 4 MB flash. Then read the full flash:
+
+```sh
+mkdir -p dev/factory-dumps
+
+UV_CACHE_DIR=/tmp/uv-cache UV_TOOL_DIR=/tmp/uv-tools \
+  uvx --from esptool esptool \
+  --chip esp32 \
+  --port "$PORT" \
+  --baud 460800 \
+  --before default-reset \
+  --after no-reset \
+  read-flash 0x0 0x400000 dev/factory-dumps/ecan-e02-factory-backup.bin
+```
+
+The backup should be exactly `4194304` bytes. A quick sanity check is to look for the ESP32 bootloader image at offset `0x1000`, the partition table at `0x8000`, and the application image at `0x10000`:
+
+```sh
+stat -c '%n %s bytes' dev/factory-dumps/ecan-e02-factory-backup.bin
+xxd -s 0x1000 -l 16 dev/factory-dumps/ecan-e02-factory-backup.bin
+xxd -s 0x8000 -l 16 dev/factory-dumps/ecan-e02-factory-backup.bin
+xxd -s 0x10000 -l 16 dev/factory-dumps/ecan-e02-factory-backup.bin
+```
+
+After the backup, reset the board normally before using the factory firmware again:
+
+```sh
+./dev/scripts/serial-reset-log.sh "$PORT" 6
+```
+
+If reset control is not wired, briefly pull `RST` to `GND` or cycle board power instead.
 
 ## Flashing using factory firmware
 
