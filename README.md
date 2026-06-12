@@ -166,6 +166,19 @@ The ESPHome Builder dashboard should show the device as adoptable. Taking contro
 
 If discovery does not appear, add the ESPHome integration manually in Home Assistant using the device IP address or the MAC-suffixed `.local` hostname.
 
+The firmware enables two OTA update paths:
+
+- ESPHome native OTA on port `3232`, used by ESPHome Builder and `esphome upload` by default.
+- Web-server OTA through the device web UI on port `80`, available as a fallback after this firmware is flashed.
+
+To force the web-server OTA path from the CLI:
+
+```sh
+./scripts/esphome.sh upload configs/ecan-e02.yaml --device <device-ip> --ota-platform web_server
+```
+
+The web UI can also upload `firmware.bin` or `firmware.ota.bin` from `http://<device-ip>/`. Do not upload `firmware.factory.bin` through OTA.
+
 The firmware exposes:
 
 - Device status and restart control.
@@ -178,7 +191,7 @@ The firmware exposes:
 
 Many diagnostic entities are disabled by default in Home Assistant to keep the device quiet. Enable them from the ESPHome device page when you need them.
 
-The public bring-up firmware leaves API encryption and OTA passwords unset so first-time adoption works without per-user secrets baked into the firmware. After adoption, add ESPHome API encryption and OTA credentials in your own ESPHome config before putting the device on an untrusted network.
+The public bring-up firmware leaves API encryption, native OTA passwords, and web-server authentication unset so first-time adoption works without per-user secrets baked into the firmware. After adoption, add ESPHome API encryption, OTA credentials, and web-server authentication in your own ESPHome config before putting the device on an untrusted network.
 
 ## Configuration
 
