@@ -1,0 +1,29 @@
+# Optional browser UI and browser OTA package for ECAN-E02 builds.
+#
+# The base package intentionally leaves this out so product-specific configs can
+# enable only ESPHome native API/OTA by default.
+
+ota:
+  - platform: web_server
+    on_begin:
+      then:
+        - logger.log:
+            level: INFO
+            tag: ecan_ota
+            format: "Web server OTA start"
+    on_end:
+      then:
+        - logger.log:
+            level: INFO
+            tag: ecan_ota
+            format: "Web server OTA complete"
+    on_error:
+      then:
+        - logger.log:
+            level: ERROR
+            tag: ecan_ota
+            format: "Web server OTA error %d"
+            args: ["x"]
+
+web_server:
+  port: 80

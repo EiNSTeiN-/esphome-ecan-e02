@@ -1,0 +1,14 @@
+substitutions:
+  name: ecan-e02
+  friendly_name: Ebyte ECAN E02
+  name_add_mac_suffix: "true"
+
+packages:
+  ecan_e02: !include ../packages/ecan-e02-base.yaml
+  web: !include ../packages/ecan-e02-web.yaml
+
+external_components:
+  - source:
+      type: local
+      path: ../components
+    components: [ecan_e02]

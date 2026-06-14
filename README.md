@@ -166,18 +166,17 @@ The ESPHome Builder dashboard should show the device as adoptable. Taking contro
 
 If discovery does not appear, add the ESPHome integration manually in Home Assistant using the device IP address or the MAC-suffixed `.local` hostname.
 
-The firmware enables two OTA update paths:
+The base firmware enables ESPHome native OTA on port `3232`, used by ESPHome Builder and `esphome upload` by default. It does not enable the browser web UI or browser OTA path unless you explicitly add the optional web package.
 
-- ESPHome native OTA on port `3232`, used by ESPHome Builder and `esphome upload` by default.
-- Web-server OTA through the device web UI on port `80`, available as a fallback after this firmware is flashed.
+To add the ESPHome web UI to your own config:
 
-To force the web-server OTA path from the CLI:
-
-```sh
-./scripts/esphome.sh upload configs/ecan-e02.yaml --device <device-ip> --ota-platform web_server
+```yaml
+packages:
+  ecan_e02: github://EiNSTeiN-/esphome-ecan-e02/packages/ecan-e02-base.yaml@main
+  web: github://EiNSTeiN-/esphome-ecan-e02/packages/ecan-e02-web.yaml@main
 ```
 
-The web UI can also upload `firmware.bin` or `firmware.ota.bin` from `http://<device-ip>/`. Do not upload `firmware.factory.bin` through OTA.
+The web UI can upload `firmware.bin` or `firmware.ota.bin` from `http://<device-ip>/`. Do not upload `firmware.factory.bin` through OTA.
 
 The firmware exposes:
 
@@ -191,7 +190,7 @@ The firmware exposes:
 
 Many diagnostic entities are disabled by default in Home Assistant to keep the device quiet. Enable them from the ESPHome device page when you need them.
 
-The public bring-up firmware leaves API encryption, native OTA passwords, and web-server authentication unset so first-time adoption works without per-user secrets baked into the firmware. After adoption, add ESPHome API encryption, OTA credentials, and web-server authentication in your own ESPHome config before putting the device on an untrusted network.
+The public bring-up firmware leaves API encryption and native OTA passwords unset so first-time adoption works without per-user secrets baked into the firmware. After adoption, add ESPHome API encryption and OTA credentials in your own ESPHome config before putting the device on an untrusted network. If you enable the optional web package, secure or disable the web UI according to your network requirements.
 
 ## Configuration
 
@@ -229,7 +228,9 @@ The board LEDs are active-low and are configured as:
 
 - [configs/ecan-e02.yaml](configs/ecan-e02.yaml): local development and flashing config.
 - [configs/ecan-e02.factory.yaml](configs/ecan-e02.factory.yaml): public ESPHome Builder adoption config.
+- [configs/ecan-e02-web.yaml](configs/ecan-e02-web.yaml): local build config with the optional ESPHome web UI enabled.
 - [packages/ecan-e02-base.yaml](packages/ecan-e02-base.yaml): reusable Ebyte ECAN-E02 firmware package.
+- [packages/ecan-e02-web.yaml](packages/ecan-e02-web.yaml): optional browser UI and browser OTA package.
 - [components/ecan_e02/](components/ecan_e02/): ESPHome helper component with board diagnostics.
 - [scripts/](scripts/): user-facing build, flash, log, USB, and driver helpers.
 - [dev/](dev/): hardware bring-up notes, debug firmware, probing configs, and development-only scripts.

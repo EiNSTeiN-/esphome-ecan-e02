@@ -3,7 +3,7 @@ substitutions:
   friendly_name: Ebyte ECAN E02
   name_add_mac_suffix: "true"
   ecan_e02_project_name: einstein.ecan_e02
-  ecan_e02_project_version: "0.2.1"
+  ecan_e02_project_version: "0.3.0"
   ecan_e02_import_url: github://EiNSTeiN-/esphome-ecan-e02/configs/ecan-e02.factory.yaml@main
 
   # Confirmed Ebyte ECAN-E02 status LEDs. They are active-low.
@@ -110,29 +110,6 @@ ota:
             tag: ecan_ota
             format: "ESPHome native OTA error %d"
             args: ["x"]
-  - platform: web_server
-    on_begin:
-      then:
-        - logger.log:
-            level: INFO
-            tag: ecan_ota
-            format: "Web server OTA start"
-    on_end:
-      then:
-        - logger.log:
-            level: INFO
-            tag: ecan_ota
-            format: "Web server OTA complete"
-    on_error:
-      then:
-        - logger.log:
-            level: ERROR
-            tag: ecan_ota
-            format: "Web server OTA error %d"
-            args: ["x"]
-
-web_server:
-  port: 80
 
 debug:
   update_interval: 60s
