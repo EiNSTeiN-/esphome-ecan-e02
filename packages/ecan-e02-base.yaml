@@ -3,7 +3,7 @@ substitutions:
   friendly_name: Ebyte ECAN E02
   name_add_mac_suffix: "true"
   ecan_e02_project_name: einstein.ecan_e02
-  ecan_e02_project_version: "0.3.0"
+  ecan_e02_project_version: "0.3.1"
   ecan_e02_import_url: github://EiNSTeiN-/esphome-ecan-e02/configs/ecan-e02.factory.yaml@main
 
   # Confirmed Ebyte ECAN-E02 status LEDs. They are active-low.
@@ -25,6 +25,7 @@ substitutions:
   can_bit_rate: 500KBPS
   can_mode: LISTENONLY
   can_node_id: "0x02"
+  twai_status_monitor: "true"
 
 esphome:
   name: ${name}
@@ -61,6 +62,7 @@ logger:
 ecan_e02:
   id: board
   update_interval: 30s
+  twai_status_monitor: ${twai_status_monitor}
 
 ethernet:
   id: eth0

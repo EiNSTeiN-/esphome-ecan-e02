@@ -185,6 +185,7 @@ The firmware exposes:
 - CAN RX frame count.
 - Last received CAN frame.
 - Optional CAN RX logging switch.
+- Periodic TWAI controller status logs.
 - LINK, ERR, and CAN status LED entities.
 - Heap, loop-time, reset-reason, and device-info diagnostics.
 
