@@ -13,7 +13,7 @@ The target board uses an ESP32-U4WD, an RTL8201 Ethernet PHY, and an isolated CA
 - CAN self-test passes when the board is powered from its normal 12 V input.
 - RTL8201 management and RMII pins are traced and configured with `phy_addr: 0`.
 - The main firmware compiles, flashes, and boots cleanly.
-- Ethernet link and DHCP still need final validation with the RJ45 port connected to a live network.
+- Ethernet link, DHCP, ESPHome API, and web-server OTA are verified on a live network.
 
 The default firmware is conservative: CAN starts in `LISTENONLY` mode, so it can monitor a live CAN bus without acknowledging or transmitting frames.
 

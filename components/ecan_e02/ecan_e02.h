@@ -23,6 +23,7 @@ class EcanE02Component : public PollingComponent {
     this->can_self_test_rx_pin_ = rx_pin;
     this->can_self_test_bit_rate_kbps_ = bit_rate_kbps;
   }
+  void set_twai_status_monitor(bool enabled) { this->twai_status_monitor_enabled_ = enabled; }
   void set_mdio_scan(uint8_t mdc_pin, uint8_t mdio_pin, uint8_t phy_addr_start, uint8_t phy_addr_end,
                      uint8_t phy_addr_batch_size) {
     this->mdio_scan_enabled_ = true;
@@ -48,6 +49,7 @@ class EcanE02Component : public PollingComponent {
   uint8_t can_self_test_rx_pin_{0};
   uint32_t can_self_test_bit_rate_kbps_{500};
   uint32_t can_self_test_counter_{0};
+  bool twai_status_monitor_enabled_{false};
   bool mdio_scan_enabled_{false};
   bool mdio_scan_ready_{false};
   uint8_t mdio_scan_mdc_pin_{0};

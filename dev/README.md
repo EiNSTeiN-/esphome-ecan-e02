@@ -87,5 +87,4 @@ The following were validated with ESPHome 2026.5.x, most recently 2026.5.3:
 - [configs/ecan-e02-ethernet-rtl8201.yaml.example](configs/ecan-e02-ethernet-rtl8201.yaml.example): config and compile.
 - [configs/ecan-e02-gpio-probe.yaml.example](configs/ecan-e02-gpio-probe.yaml.example): config.
 - [configs/ecan-e02-ethernet-mdio-scan.yaml](configs/ecan-e02-ethernet-mdio-scan.yaml): config, compile, flash, and PHY ID logs on confirmed `GPIO18` MDC, `GPIO5` MDIO, and `GPIO14` reset.
-
-Ethernet link and DHCP still need to be verified with the RJ45 port connected to a live network.
+- RJ45 Ethernet link, DHCP, ESPHome API, and web server are verified on a live network.

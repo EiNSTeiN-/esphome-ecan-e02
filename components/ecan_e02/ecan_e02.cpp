@@ -17,7 +17,7 @@
 #include "esp_system.h"
 #endif
 
-#if defined(USE_ESP32) && defined(USE_ECAN_E02_CAN_SELF_TEST)
+#if defined(USE_ESP32) && (defined(USE_ECAN_E02_CAN_SELF_TEST) || defined(USE_ECAN_E02_TWAI_STATUS))
 #include "driver/twai.h"
 #endif
 
@@ -115,7 +115,7 @@ static uint16_t mdio_read_register_(gpio_num_t mdc, gpio_num_t mdio, uint8_t phy
 static bool mdio_register_value_plausible_(uint16_t value) { return value != 0x0000 && value != 0xFFFF; }
 #endif
 
-#if defined(USE_ESP32) && defined(USE_ECAN_E02_CAN_SELF_TEST)
+#if defined(USE_ESP32) && (defined(USE_ECAN_E02_CAN_SELF_TEST) || defined(USE_ECAN_E02_TWAI_STATUS))
 static bool get_twai_timing(uint32_t bit_rate_kbps, twai_timing_config_t *config) {
   switch (bit_rate_kbps) {
     case 25:
@@ -166,12 +166,12 @@ static void log_twai_status(const char *context) {
   twai_status_info_t status = {};
   esp_err_t err = twai_get_status_info(&status);
   if (err != ESP_OK) {
-    ESP_LOGW(TAG, "CAN self-test status %s unavailable: %s", context, esp_err_to_name(err));
+    ESP_LOGW(TAG, "TWAI status %s unavailable: %s", context, esp_err_to_name(err));
     return;
   }
 
   ESP_LOGW(TAG,
-           "CAN self-test status %s: state=%s txq=%" PRIu32 " rxq=%" PRIu32 " tx_err=%" PRIu32
+           "TWAI status %s: state=%s txq=%" PRIu32 " rxq=%" PRIu32 " tx_err=%" PRIu32
            " rx_err=%" PRIu32 " tx_fail=%" PRIu32 " rx_missed=%" PRIu32 " rx_overrun=%" PRIu32
            " arb_lost=%" PRIu32 " bus_err=%" PRIu32,
            context, twai_state_to_string(status.state), status.msgs_to_tx, status.msgs_to_rx,
@@ -234,6 +234,8 @@ void EcanE02Component::dump_config() {
                   TRUEFALSE(this->can_self_test_ready_));
   }
 
+  ESP_LOGCONFIG(TAG, "  TWAI status monitor: %s", TRUEFALSE(this->twai_status_monitor_enabled_));
+
   if (this->mdio_scan_enabled_) {
     ESP_LOGCONFIG(TAG, "  MDIO scan: mdc=GPIO%u mdio=GPIO%u phy_addr=%u..%u batch=%u ready=%s",
                   this->mdio_scan_mdc_pin_, this->mdio_scan_mdio_pin_, this->mdio_scan_phy_addr_start_,
@@ -251,6 +253,12 @@ void EcanE02Component::update() {
   if (this->can_self_test_ready_) {
     this->run_can_self_test_();
   }
+
+#if defined(USE_ESP32) && defined(USE_ECAN_E02_TWAI_STATUS)
+  if (this->twai_status_monitor_enabled_) {
+    log_twai_status("monitor");
+  }
+#endif
 
   if (this->mdio_scan_ready_) {
     this->run_mdio_scan_();

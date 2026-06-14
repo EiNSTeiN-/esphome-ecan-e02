@@ -21,6 +21,7 @@ CONF_PROBE_PINS = "probe_pins"
 CONF_RESET_ACTIVE_LOW = "reset_active_low"
 CONF_RESET_HOLD_MS = "reset_hold_ms"
 CONF_RESET_SETTLE_MS = "reset_settle_ms"
+CONF_TWAI_STATUS_MONITOR = "twai_status_monitor"
 
 CAN_SELF_TEST_BIT_RATES = {
     "25KBPS": 25,
@@ -63,6 +64,7 @@ CONFIG_SCHEMA = cv.Schema(
         cv.Optional(CONF_PROBE_PINS, default=[]): cv.ensure_list(
             pins.internal_gpio_input_pin_schema
         ),
+        cv.Optional(CONF_TWAI_STATUS_MONITOR, default=False): cv.boolean,
         cv.Optional(CONF_CAN_SELF_TEST): cv.Schema(
             {
                 cv.Required(CONF_TX_PIN): pins.internal_gpio_output_pin_number,
@@ -107,6 +109,12 @@ async def to_code(config):
     for pin_config in config[CONF_PROBE_PINS]:
         pin = await gpio_pin_expression(pin_config)
         cg.add(var.add_probe_pin(pin))
+
+    if config[CONF_TWAI_STATUS_MONITOR]:
+        cg.add_define("USE_ECAN_E02_TWAI_STATUS")
+        include_builtin_idf_component("driver")
+        include_builtin_idf_component("esp_driver_twai")
+        cg.add(var.set_twai_status_monitor(True))
 
     if can_self_test_config := config.get(CONF_CAN_SELF_TEST):
         cg.add_define("USE_ECAN_E02_CAN_SELF_TEST")
